@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { usePermission } from '@/hooks/use-permission';
 
 interface Student {
   id: number;
@@ -62,6 +63,7 @@ const EDUCATION_LEVEL_MAP: Record<string, string> = {
 };
 
 export default function StudentsPage() {
+  const { canDelete, role } = usePermission();
   const [students, setStudents] = useState<Student[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -234,6 +236,11 @@ export default function StudentsPage() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!canDelete) {
+      alert('权限不足：只有管理员可以删除学生');
+      return;
+    }
+    
     if (!confirm('确定要删除这个学生吗？此操作不可恢复。')) {
       return;
     }
@@ -241,6 +248,9 @@ export default function StudentsPage() {
     try {
       const response = await fetch(`/api/students/${id}`, {
         method: 'DELETE',
+        headers: {
+          'x-user-role': role,
+        },
       });
       
       const result = await response.json();
@@ -259,7 +269,11 @@ export default function StudentsPage() {
       const response = await fetch(`/api/students/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ 
+          status,
+          // 结课时清除续费提醒
+          clear_reminders: status === 'finished',
+        }),
       });
       
       const result = await response.json();
@@ -463,13 +477,15 @@ export default function StudentsPage() {
                             <Pencil className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(student.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(student.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

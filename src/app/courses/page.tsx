@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { usePermission } from '@/hooks/use-permission';
 
 interface Course {
   id: number;
@@ -51,6 +52,7 @@ const EDUCATION_LEVEL_MAP: Record<string, string> = {
 };
 
 export default function CoursesPage() {
+  const { canEditCourse, canDelete } = usePermission();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -175,12 +177,14 @@ export default function CoursesPage() {
         </div>
         
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              添加课程
-            </Button>
-          </DialogTrigger>
+          {canEditCourse && (
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                添加课程
+              </Button>
+            </DialogTrigger>
+          )}
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>添加课程</DialogTitle>
@@ -339,32 +343,39 @@ export default function CoursesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {course.status === 'active' ? (
+                        {canEditCourse && (
+                          course.status === 'active' ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleUpdateStatus(course.id, 'inactive')}
+                              title="停课"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleUpdateStatus(course.id, 'active')}
+                              title="恢复开课"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )
+                        )}
+                        {canDelete && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleUpdateStatus(course.id, 'inactive')}
-                            title="停课"
+                            onClick={() => handleDelete(course.id)}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleUpdateStatus(course.id, 'active')}
-                            title="恢复开课"
-                          >
-                            <Pencil className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(course.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {!canEditCourse && !canDelete && (
+                          <span className="text-muted-foreground text-xs">无操作权限</span>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

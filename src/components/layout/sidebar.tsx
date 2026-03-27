@@ -8,11 +8,20 @@ import {
   Users,
   Calendar,
   BookOpen,
-  History,
   Menu,
+  Shield,
+  User,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { usePermission, USER_ROLES, UserRole } from '@/hooks/use-permission';
 
 const navigation = [
   { name: '控制台', href: '/', icon: LayoutDashboard },
@@ -24,6 +33,7 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { role, setRole, roleInfo } = usePermission();
 
   return (
     <div
@@ -65,6 +75,55 @@ export function Sidebar() {
           );
         })}
       </nav>
+      
+      {/* 角色切换区域 */}
+      <div className="border-t p-3">
+        {!collapsed ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {role === 'admin' ? (
+                <Shield className="h-4 w-4 text-primary" />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
+              <span>当前角色</span>
+            </div>
+            <Select
+              value={role}
+              onValueChange={(value) => setRole(value as UserRole)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    <span>{USER_ROLES.admin.label}</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="staff">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>{USER_ROLES.staff.label}</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {roleInfo.description}
+            </p>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            {role === 'admin' ? (
+              <Shield className="h-5 w-5 text-primary" />
+            ) : (
+              <User className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
