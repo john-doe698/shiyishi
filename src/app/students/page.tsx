@@ -51,18 +51,10 @@ interface Course {
   name: string;
   price: string;
   education_level: string;
-  class_type: string;
+  class_name: string | null;
+  total_hours: number;
+  valid_months: number;
 }
-
-// 班次类型配置
-const CLASS_TYPE_CONFIG: Record<string, { name: string; hours: number; months: number }> = {
-  weekday: { name: '周中班', hours: 22, months: 1 },
-  weekend: { name: '周末班', hours: 16, months: 1 },
-  quarter_weekday: { name: '周中季卡', hours: 66, months: 3 },
-  quarter_weekend: { name: '周末季卡', hours: 48, months: 3 },
-  semester_weekday: { name: '周中学期卡', hours: 88, months: 4 },
-  semester_weekend: { name: '周末学期卡', hours: 64, months: 4 },
-};
 
 const EDUCATION_LEVEL_MAP: Record<string, string> = {
   primary: '小学',
@@ -158,19 +150,17 @@ export default function StudentsPage() {
     const course = courses.find(c => c.id.toString() === courseId);
     if (!course) return;
     
-    const config = CLASS_TYPE_CONFIG[course.class_type];
-    if (config) {
-      const hours = config.hours;
-      const amount = (Number(course.price) * hours).toFixed(2);
-      const expiryDate = calculateExpiryDate(config.months);
-      
-      setEnrollment({
-        course_id: courseId,
-        total_hours: hours,
-        amount,
-        expiry_date: expiryDate,
-      });
-    }
+    // 使用课程自定义的课时和有效期
+    const hours = course.total_hours;
+    const amount = (Number(course.price) * hours).toFixed(2);
+    const expiryDate = calculateExpiryDate(course.valid_months);
+    
+    setEnrollment({
+      course_id: courseId,
+      total_hours: hours,
+      amount,
+      expiry_date: expiryDate,
+    });
   };
 
   const handleAddStudent = async () => {
@@ -507,14 +497,11 @@ export default function StudentsPage() {
                   <SelectValue placeholder="请选择课程班次" />
                 </SelectTrigger>
                 <SelectContent>
-                  {courses.map((course) => {
-                    const config = CLASS_TYPE_CONFIG[course.class_type];
-                    return (
-                      <SelectItem key={course.id} value={course.id.toString()}>
-                        {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {config?.name || ''} ({config?.hours || 0}课时/{config?.months || 0}个月)
-                      </SelectItem>
-                    );
-                  })}
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id.toString()}>
+                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/{course.valid_months}个月)
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

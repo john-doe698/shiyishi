@@ -38,7 +38,9 @@ export const courses = pgTable(
     description: text("description"),
     price: numeric("price", { precision: 10, scale: 2 }).notNull().default('0'), // 单课时价格
     education_level: varchar("education_level", { length: 20 }).notNull().default('primary'), // primary: 小学, middle: 中学
-    class_type: varchar("class_type", { length: 20 }).notNull().default('weekday'), // weekday: 周中班, weekend: 周末班, quarter: 季卡, semester: 学期卡
+    class_name: varchar("class_name", { length: 50 }), // 班次名称（自定义，如：周中班、周末季卡等）
+    total_hours: integer("total_hours").notNull().default(0), // 班次包含的总课时
+    valid_months: integer("valid_months").notNull().default(1), // 有效期（月）
     status: varchar("status", { length: 20 }).notNull().default('active'), // active: 开课, inactive: 停课
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }),
@@ -46,7 +48,6 @@ export const courses = pgTable(
   (table) => [
     index("courses_status_idx").on(table.status),
     index("courses_education_level_idx").on(table.education_level),
-    index("courses_class_type_idx").on(table.class_type),
   ]
 );
 

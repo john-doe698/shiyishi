@@ -39,7 +39,7 @@ interface StudentDetail {
       name: string;
       price: string;
       education_level: string;
-      class_type: string;
+      class_name: string | null;
     } | null;
   }>;
   check_ins: Array<{
@@ -54,6 +54,11 @@ interface StudentDetail {
     } | null;
   }>;
 }
+
+const EDUCATION_LEVEL_MAP: Record<string, string> = {
+  primary: '小学',
+  middle: '中学',
+};
 
 export default function StudentDetailPage() {
   const params = useParams();
@@ -215,7 +220,7 @@ export default function StudentDetailPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>课程</TableHead>
-                  <TableHead className="text-center">班次类型</TableHead>
+                  <TableHead className="text-center">班次名称</TableHead>
                   <TableHead className="text-center">购买课时</TableHead>
                   <TableHead className="text-center">剩余课时</TableHead>
                   <TableHead className="text-center">金额</TableHead>
@@ -232,14 +237,8 @@ export default function StudentDetailPage() {
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline">
-                        {enrollment.courses?.education_level === 'primary' ? '小学' : 
-                         enrollment.courses?.education_level === 'middle' ? '中学' : ''} 
-                        {enrollment.courses?.class_type === 'weekday' ? '周中班' :
-                         enrollment.courses?.class_type === 'weekend' ? '周末班' :
-                         enrollment.courses?.class_type === 'quarter_weekday' ? '周中季卡' :
-                         enrollment.courses?.class_type === 'quarter_weekend' ? '周末季卡' :
-                         enrollment.courses?.class_type === 'semester_weekday' ? '周中学期卡' :
-                         enrollment.courses?.class_type === 'semester_weekend' ? '周末学期卡' : '-'}
+                        {EDUCATION_LEVEL_MAP[enrollment.courses?.education_level as keyof typeof EDUCATION_LEVEL_MAP] || ''} 
+                        {enrollment.courses?.class_name ? ` ${enrollment.courses.class_name}` : ''}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">{enrollment.total_hours}</TableCell>

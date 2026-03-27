@@ -38,33 +38,16 @@ interface Course {
   description: string | null;
   price: string;
   education_level: string;
-  class_type: string;
+  class_name: string | null;
+  total_hours: number;
+  valid_months: number;
   status: string;
   created_at: string;
 }
 
-// 班次类型配置
-const CLASS_TYPE_CONFIG = {
-  weekday: { name: '周中班', hours: 22, months: 1 },
-  weekend: { name: '周末班', hours: 16, months: 1 },
-  quarter_weekday: { name: '周中季卡', hours: 66, months: 3 },
-  quarter_weekend: { name: '周末季卡', hours: 48, months: 3 },
-  semester_weekday: { name: '周中学期卡', hours: 88, months: 4 },
-  semester_weekend: { name: '周末学期卡', hours: 64, months: 4 },
-};
-
-const EDUCATION_LEVEL_MAP = {
+const EDUCATION_LEVEL_MAP: Record<string, string> = {
   primary: '小学',
   middle: '中学',
-};
-
-const CLASS_TYPE_MAP = {
-  weekday: '周中班',
-  weekend: '周末班',
-  quarter_weekday: '周中季卡',
-  quarter_weekend: '周末季卡',
-  semester_weekday: '周中学期卡',
-  semester_weekend: '周末学期卡',
 };
 
 export default function CoursesPage() {
@@ -78,7 +61,9 @@ export default function CoursesPage() {
     description: '',
     price: '0',
     education_level: 'primary',
-    class_type: 'weekday',
+    class_name: '',
+    total_hours: 22,
+    valid_months: 1,
   });
 
   useEffect(() => {
@@ -114,7 +99,9 @@ export default function CoursesPage() {
           description: newCourse.description || null,
           price: newCourse.price || '0',
           education_level: newCourse.education_level,
-          class_type: newCourse.class_type,
+          class_name: newCourse.class_name || null,
+          total_hours: newCourse.total_hours || 0,
+          valid_months: newCourse.valid_months || 1,
         }),
       });
       
@@ -126,7 +113,9 @@ export default function CoursesPage() {
           description: '',
           price: '0',
           education_level: 'primary',
-          class_type: 'weekday',
+          class_name: '',
+          total_hours: 22,
+          valid_months: 1,
         });
         fetchCourses();
       } else if (result.error) {
@@ -182,7 +171,7 @@ export default function CoursesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">课程管理</h2>
-          <p className="text-muted-foreground">管理课程信息和班次类型</p>
+          <p className="text-muted-foreground">管理课程信息和班次设置</p>
         </div>
         
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
@@ -195,7 +184,7 @@ export default function CoursesPage() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>添加课程</DialogTitle>
-              <DialogDescription>创建新课程班次</DialogDescription>
+              <DialogDescription>创建新课程，自定义班次名称和课时</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
@@ -204,9 +193,10 @@ export default function CoursesPage() {
                   id="name"
                   value={newCourse.name}
                   onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
-                  placeholder="请输入课程名称"
+                  placeholder="如：数学、英语、全科"
                 />
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>学段</Label>
@@ -224,59 +214,70 @@ export default function CoursesPage() {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label>班次类型</Label>
-                  <Select
-                    value={newCourse.class_type}
-                    onValueChange={(value) => setNewCourse({ ...newCourse, class_type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekday">周中班 (22课时/月)</SelectItem>
-                      <SelectItem value="weekend">周末班 (16课时/月)</SelectItem>
-                      <SelectItem value="quarter_weekday">周中季卡 (66课时/3月)</SelectItem>
-                      <SelectItem value="quarter_weekend">周末季卡 (48课时/3月)</SelectItem>
-                      <SelectItem value="semester_weekday">周中学期卡 (88课时/4月)</SelectItem>
-                      <SelectItem value="semester_weekend">周末学期卡 (64课时/4月)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="class_name">班次名称</Label>
+                  <Input
+                    id="class_name"
+                    value={newCourse.class_name}
+                    onChange={(e) => setNewCourse({ ...newCourse, class_name: e.target.value })}
+                    placeholder="如：周中班、周末季卡"
+                  />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="price">课时价格（元）</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={newCourse.price}
-                  onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
-                  placeholder="0.00"
-                />
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="total_hours">课时数</Label>
+                  <Input
+                    id="total_hours"
+                    type="number"
+                    min="1"
+                    value={newCourse.total_hours}
+                    onChange={(e) => setNewCourse({ ...newCourse, total_hours: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="valid_months">有效期（月）</Label>
+                  <Input
+                    id="valid_months"
+                    type="number"
+                    min="1"
+                    value={newCourse.valid_months}
+                    onChange={(e) => setNewCourse({ ...newCourse, valid_months: parseInt(e.target.value) || 1 })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="price">课时价格（元）</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newCourse.price}
+                    onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
+                  />
+                </div>
               </div>
+              
               <div className="grid gap-2">
                 <Label htmlFor="description">课程描述</Label>
                 <Textarea
                   id="description"
                   value={newCourse.description}
                   onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                  placeholder="课程描述"
+                  placeholder="课程描述（可选）"
                 />
               </div>
               
-              {/* 班次信息提示 */}
-              {newCourse.class_type && (
-                <div className="p-3 bg-muted rounded-lg text-sm">
-                  <p className="font-medium mb-1">
-                    {CLASS_TYPE_CONFIG[newCourse.class_type as keyof typeof CLASS_TYPE_CONFIG]?.name} 信息：
-                  </p>
-                  <p className="text-muted-foreground">
-                    总课时：{CLASS_TYPE_CONFIG[newCourse.class_type as keyof typeof CLASS_TYPE_CONFIG]?.hours} 课时 / 
-                    有效期：{CLASS_TYPE_CONFIG[newCourse.class_type as keyof typeof CLASS_TYPE_CONFIG]?.months} 个月
-                  </p>
+              {/* 预览计算 */}
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <p className="font-medium mb-2">报名时将自动填充：</p>
+                <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                  <p>课时：{newCourse.total_hours} 课时</p>
+                  <p>有效期：{newCourse.valid_months} 个月</p>
+                  <p>金额：¥{(Number(newCourse.price) * newCourse.total_hours).toFixed(2)}</p>
+                  <p>班次：{newCourse.class_name || '未设置'}</p>
                 </div>
-              )}
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
@@ -306,7 +307,7 @@ export default function CoursesPage() {
                 <TableRow>
                   <TableHead>课程名称</TableHead>
                   <TableHead className="text-center">学段</TableHead>
-                  <TableHead className="text-center">班次类型</TableHead>
+                  <TableHead className="text-center">班次名称</TableHead>
                   <TableHead className="text-center">课时</TableHead>
                   <TableHead className="text-center">有效期</TableHead>
                   <TableHead className="text-center">课时价格</TableHead>
@@ -315,60 +316,59 @@ export default function CoursesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {courses.map((course) => {
-                  const classConfig = CLASS_TYPE_CONFIG[course.class_type as keyof typeof CLASS_TYPE_CONFIG];
-                  return (
-                    <TableRow key={course.id}>
-                      <TableCell className="font-medium">{course.name}</TableCell>
-                      <TableCell className="text-center">
-                        {EDUCATION_LEVEL_MAP[course.education_level as keyof typeof EDUCATION_LEVEL_MAP] || course.education_level}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">
-                          {CLASS_TYPE_MAP[course.class_type as keyof typeof CLASS_TYPE_MAP] || course.class_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">{classConfig?.hours || '-'}</TableCell>
-                      <TableCell className="text-center">{classConfig?.months || '-'} 个月</TableCell>
-                      <TableCell className="text-center">¥{course.price}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
-                          {course.status === 'active' ? '开课中' : '已停课'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {course.status === 'active' ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleUpdateStatus(course.id, 'inactive')}
-                              title="停课"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleUpdateStatus(course.id, 'active')}
-                              title="恢复开课"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
+                {courses.map((course) => (
+                  <TableRow key={course.id}>
+                    <TableCell className="font-medium">{course.name}</TableCell>
+                    <TableCell className="text-center">
+                      {EDUCATION_LEVEL_MAP[course.education_level as keyof typeof EDUCATION_LEVEL_MAP] || course.education_level}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {course.class_name ? (
+                        <Badge variant="outline">{course.class_name}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">{course.total_hours}</TableCell>
+                    <TableCell className="text-center">{course.valid_months} 个月</TableCell>
+                    <TableCell className="text-center">¥{course.price}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
+                        {course.status === 'active' ? '开课中' : '已停课'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {course.status === 'active' ? (
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(course.id)}
+                            onClick={() => handleUpdateStatus(course.id, 'inactive')}
+                            title="停课"
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleUpdateStatus(course.id, 'active')}
+                            title="恢复开课"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(course.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}

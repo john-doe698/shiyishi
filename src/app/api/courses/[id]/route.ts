@@ -11,18 +11,19 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description, price, status } = body;
     
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
     
-    if (name !== undefined) updateData.name = name;
-    if (description !== undefined) updateData.description = description || null;
-    if (price !== undefined) updateData.price = price;
-    if (status !== undefined) updateData.status = status;
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.description !== undefined) updateData.description = body.description || null;
+    if (body.price !== undefined) updateData.price = body.price;
+    if (body.status !== undefined) updateData.status = body.status;
     if (body.education_level !== undefined) updateData.education_level = body.education_level;
-    if (body.class_type !== undefined) updateData.class_type = body.class_type;
+    if (body.class_name !== undefined) updateData.class_name = body.class_name || null;
+    if (body.total_hours !== undefined) updateData.total_hours = body.total_hours;
+    if (body.valid_months !== undefined) updateData.valid_months = body.valid_months;
     
     const { data, error } = await client
       .from('courses')
