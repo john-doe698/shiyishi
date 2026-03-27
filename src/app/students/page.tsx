@@ -86,6 +86,7 @@ export default function StudentsPage() {
     course_id: '',
     total_hours: 0,
     amount: '0',
+    start_date: new Date().toISOString().split('T')[0],
     expiry_date: '',
   });
 
@@ -154,11 +155,13 @@ export default function StudentsPage() {
     const hours = course.total_hours;
     const amount = (Number(course.price) * hours).toFixed(2);
     const expiryDate = calculateExpiryDate(course.valid_months);
+    const startDate = new Date().toISOString().split('T')[0];
     
     setEnrollment({
       course_id: courseId,
       total_hours: hours,
       amount,
+      start_date: startDate,
       expiry_date: expiryDate,
     });
   };
@@ -220,7 +223,7 @@ export default function StudentsPage() {
       if (result.data) {
         setEnrollDialogOpen(false);
         setEnrollingStudent(null);
-        setEnrollment({ course_id: '', total_hours: 0, amount: '0', expiry_date: '' });
+        setEnrollment({ course_id: '', total_hours: 0, amount: '0', start_date: new Date().toISOString().split('T')[0], expiry_date: '' });
         fetchStudents();
       } else if (result.error) {
         alert(result.error);
@@ -509,7 +512,7 @@ export default function StudentsPage() {
             {enrollment.course_id && (
               <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
                 <p><strong>课时数量：</strong>{enrollment.total_hours} 课时</p>
-                <p><strong>到期日期：</strong>{enrollment.expiry_date}</p>
+                <p><strong>有效期：</strong>{enrollment.start_date} 至 {enrollment.expiry_date}</p>
                 <p><strong>课时价格：</strong>¥{courses.find(c => c.id.toString() === enrollment.course_id)?.price}/课时</p>
               </div>
             )}

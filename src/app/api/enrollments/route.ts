@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { student_id, course_id, total_hours, amount, expiry_date, remark } = body;
+    const { student_id, course_id, total_hours, amount, start_date, expiry_date, remark } = body;
     
     // 开始事务处理
     // 1. 创建报名记录
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         total_hours: total_hours || 0,
         remaining_hours: total_hours || 0,
         amount: amount || '0',
+        start_date: start_date || new Date().toISOString(),
         expiry_date: expiry_date || null,
         remark: remark || null,
         status: 'active',

@@ -8,9 +8,11 @@
 
 1. **学生管理**：录入学生信息、查看学生详情、管理学生状态（在读/已结课）
 2. **课程管理**：创建课程、设置课时价格、管理课程状态、自定义班次名称/课时/有效期
-3. **签到管理**：学生签到、请假、缺勤记录，自动扣减课时
+3. **签到管理**：学生签到、请假、缺勤记录，自动扣减课时，消课记录查看（签到与消课合并管理）
 4. **消课记录**：查看课时消耗明细和消费金额统计
 5. **续费提醒**：即将到期提醒、已过期提醒、课时不足提醒（阈值：≤6课时）
+6. **有效期管理**：支持设置有效期日期范围（开始日期至到期日期）
+7. **续费功能**：学生可对课程进行续费，自动计算课时和有效期
 
 ### 版本技术栈
 
@@ -61,7 +63,7 @@
 |------|------|---------|
 | students | 学生表 | id, name, phone, parent_name, parent_phone, status, total_hours, remaining_hours |
 | courses | 课程表 | id, name, description, price, education_level, class_name, total_hours, valid_months, status |
-| enrollments | 报名记录表 | id, student_id, course_id, total_hours, remaining_hours, amount, expiry_date, status |
+| enrollments | 报名记录表 | id, student_id, course_id, total_hours, remaining_hours, amount, start_date, expiry_date, status |
 | check_ins | 签到记录表 | id, student_id, course_id, check_in_time, hours, status |
 | lesson_consumptions | 消课记录表 | id, student_id, course_id, check_in_id, hours, amount |
 
@@ -74,6 +76,7 @@
 | /api/courses | GET, POST | 获取课程列表/创建课程 |
 | /api/courses/[id] | PUT, DELETE | 更新/删除课程 |
 | /api/enrollments | GET, POST | 获取报名记录/学生报名 |
+| /api/enrollments/[id] | GET, PUT, DELETE | 报名详情/修改有效期/删除 |
 | /api/check-ins | GET, POST | 获取签到记录/学生签到 |
 | /api/consumptions | GET | 获取消课记录 |
 | /api/reminders | GET | 获取续费提醒（即将到期/已过期/课时不足） |

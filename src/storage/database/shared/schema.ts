@@ -61,6 +61,7 @@ export const enrollments = pgTable(
     total_hours: integer("total_hours").notNull().default(0), // 购买总课时
     remaining_hours: integer("remaining_hours").notNull().default(0), // 剩余课时
     amount: numeric("amount", { precision: 10, scale: 2 }).notNull().default('0'), // 报名金额
+    start_date: timestamp("start_date", { withTimezone: true }), // 有效期开始日期
     expiry_date: timestamp("expiry_date", { withTimezone: true }), // 到期日期
     status: varchar("status", { length: 20 }).notNull().default('active'), // active: 有效, expired: 已过期
     remark: text("remark"),

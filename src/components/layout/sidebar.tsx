@@ -17,9 +17,8 @@ import { Button } from '@/components/ui/button';
 const navigation = [
   { name: '控制台', href: '/', icon: LayoutDashboard },
   { name: '学生管理', href: '/students', icon: Users },
-  { name: '签到管理', href: '/check-in', icon: Calendar },
+  { name: '签到与消课', href: '/check-in', icon: Calendar },
   { name: '课程管理', href: '/courses', icon: BookOpen },
-  { name: '消课记录', href: '/consumptions', icon: History },
 ];
 
 export function Sidebar() {
