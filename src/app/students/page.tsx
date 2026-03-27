@@ -264,6 +264,66 @@ export default function StudentsPage() {
     }
   };
 
+  const renderActions = (student: Student) => {
+    // 规划师不显示操作栏
+    if (!canDelete) {
+      return (
+        <Link href={`/students/${student.id}`}>
+          <Button variant="ghost" size="icon">
+            <Eye className="h-4 w-4" />
+          </Button>
+        </Link>
+      );
+    }
+    
+    return (
+      <div className="flex items-center justify-end gap-2">
+        <Link href={`/students/${student.id}`}>
+          <Button variant="ghost" size="icon">
+            <Eye className="h-4 w-4" />
+          </Button>
+        </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setEnrollingStudent(student);
+            setEnrollDialogOpen(true);
+          }}
+          title="报名课程"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+        {student.status === 'active' ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleUpdateStatus(student.id, 'finished')}
+            title="标记结课"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleUpdateStatus(student.id, 'active')}
+            title="恢复在读"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleDelete(student.id)}
+        >
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+    );
+  };
+
   const handleUpdateStatus = async (id: number, status: string) => {
     try {
       const response = await fetch(`/api/students/${id}`, {
@@ -441,52 +501,7 @@ export default function StudentsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/students/${student.id}`}>
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setEnrollingStudent(student);
-                            setEnrollDialogOpen(true);
-                          }}
-                          title="报名课程"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        {student.status === 'active' ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleUpdateStatus(student.id, 'finished')}
-                            title="标记结课"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleUpdateStatus(student.id, 'active')}
-                            title="恢复在读"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(student.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
+                      {renderActions(student)}
                     </TableCell>
                   </TableRow>
                 ))}

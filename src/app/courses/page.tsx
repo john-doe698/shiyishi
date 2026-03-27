@@ -30,7 +30,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, Users } from 'lucide-react';
 import { usePermission } from '@/hooks/use-permission';
 
 interface Course {
@@ -44,6 +44,8 @@ interface Course {
   valid_months: number;
   status: string;
   created_at: string;
+  student_names?: string[];
+  student_count?: number;
 }
 
 const EDUCATION_LEVEL_MAP: Record<string, string> = {
@@ -168,6 +170,9 @@ export default function CoursesPage() {
     }
   };
 
+  // 判断是否显示操作列
+  const showActions = canEditCourse || canDelete;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -176,121 +181,121 @@ export default function CoursesPage() {
           <p className="text-muted-foreground">管理课程信息和班次设置</p>
         </div>
         
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          {canEditCourse && (
+        {canEditCourse && (
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 添加课程
               </Button>
             </DialogTrigger>
-          )}
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>添加课程</DialogTitle>
-              <DialogDescription>创建新课程，自定义班次名称和课时</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">课程名称 *</Label>
-                <Input
-                  id="name"
-                  value={newCourse.name}
-                  onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
-                  placeholder="如：数学、英语、全科"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>添加课程</DialogTitle>
+                <DialogDescription>创建新课程，自定义班次名称和课时</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label>学段</Label>
-                  <Select
-                    value={newCourse.education_level}
-                    onValueChange={(value) => setNewCourse({ ...newCourse, education_level: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="primary">小学</SelectItem>
-                      <SelectItem value="middle">中学</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="class_name">班次名称</Label>
+                  <Label htmlFor="name">课程名称 *</Label>
                   <Input
-                    id="class_name"
-                    value={newCourse.class_name}
-                    onChange={(e) => setNewCourse({ ...newCourse, class_name: e.target.value })}
-                    placeholder="如：周中班、周末季卡"
+                    id="name"
+                    value={newCourse.name}
+                    onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
+                    placeholder="如：数学、英语、全科"
                   />
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>学段</Label>
+                    <Select
+                      value={newCourse.education_level}
+                      onValueChange={(value) => setNewCourse({ ...newCourse, education_level: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">小学</SelectItem>
+                        <SelectItem value="middle">中学</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="class_name">班次名称</Label>
+                    <Input
+                      id="class_name"
+                      value={newCourse.class_name}
+                      onChange={(e) => setNewCourse({ ...newCourse, class_name: e.target.value })}
+                      placeholder="如：周中班、周末季卡"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="total_hours">课时数</Label>
+                    <Input
+                      id="total_hours"
+                      type="number"
+                      min="1"
+                      value={newCourse.total_hours}
+                      onChange={(e) => setNewCourse({ ...newCourse, total_hours: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="valid_months">有效期（月）</Label>
+                    <Input
+                      id="valid_months"
+                      type="number"
+                      min="1"
+                      value={newCourse.valid_months}
+                      onChange={(e) => setNewCourse({ ...newCourse, valid_months: parseInt(e.target.value) || 1 })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="price">课时价格（元）</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newCourse.price}
+                      onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
+                    />
+                  </div>
+                </div>
+                
                 <div className="grid gap-2">
-                  <Label htmlFor="total_hours">课时数</Label>
-                  <Input
-                    id="total_hours"
-                    type="number"
-                    min="1"
-                    value={newCourse.total_hours}
-                    onChange={(e) => setNewCourse({ ...newCourse, total_hours: parseInt(e.target.value) || 0 })}
+                  <Label htmlFor="description">课程描述</Label>
+                  <Textarea
+                    id="description"
+                    value={newCourse.description}
+                    onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
+                    placeholder="课程描述（可选）"
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="valid_months">有效期（月）</Label>
-                  <Input
-                    id="valid_months"
-                    type="number"
-                    min="1"
-                    value={newCourse.valid_months}
-                    onChange={(e) => setNewCourse({ ...newCourse, valid_months: parseInt(e.target.value) || 1 })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="price">课时价格（元）</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newCourse.price}
-                    onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
-                  />
+                
+                {/* 预览计算 */}
+                <div className="p-3 bg-muted rounded-lg text-sm">
+                  <p className="font-medium mb-2">报名时将自动填充：</p>
+                  <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                    <p>课时：{newCourse.total_hours} 课时</p>
+                    <p>有效期：{newCourse.valid_months} 个月</p>
+                    <p>金额：¥{(Number(newCourse.price) * newCourse.total_hours).toFixed(2)}</p>
+                    <p>班次：{newCourse.class_name || '未设置'}</p>
+                  </div>
                 </div>
               </div>
-              
-              <div className="grid gap-2">
-                <Label htmlFor="description">课程描述</Label>
-                <Textarea
-                  id="description"
-                  value={newCourse.description}
-                  onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                  placeholder="课程描述（可选）"
-                />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+                  取消
+                </Button>
+                <Button onClick={handleAddCourse}>确认添加</Button>
               </div>
-              
-              {/* 预览计算 */}
-              <div className="p-3 bg-muted rounded-lg text-sm">
-                <p className="font-medium mb-2">报名时将自动填充：</p>
-                <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-                  <p>课时：{newCourse.total_hours} 课时</p>
-                  <p>有效期：{newCourse.valid_months} 个月</p>
-                  <p>金额：¥{(Number(newCourse.price) * newCourse.total_hours).toFixed(2)}</p>
-                  <p>班次：{newCourse.class_name || '未设置'}</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleAddCourse}>确认添加</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Card>
@@ -315,8 +320,9 @@ export default function CoursesPage() {
                   <TableHead className="text-center">课时</TableHead>
                   <TableHead className="text-center">有效期</TableHead>
                   <TableHead className="text-center">课时价格</TableHead>
+                  <TableHead className="text-center">在读学生</TableHead>
                   <TableHead className="text-center">状态</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
+                  {showActions && <TableHead className="text-right">操作</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -337,47 +343,60 @@ export default function CoursesPage() {
                     <TableCell className="text-center">{course.valid_months} 个月</TableCell>
                     <TableCell className="text-center">¥{course.price}</TableCell>
                     <TableCell className="text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>{course.student_count || 0}</span>
+                        </div>
+                        {course.student_names && course.student_names.length > 0 && (
+                          <div className="text-xs text-muted-foreground max-w-32 truncate" title={course.student_names.join('、')}>
+                            {course.student_names.slice(0, 3).join('、')}
+                            {course.student_names.length > 3 && ` +${course.student_names.length - 3}`}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
                         {course.status === 'active' ? '开课中' : '已停课'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {canEditCourse && (
-                          course.status === 'active' ? (
+                    {showActions && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {canEditCourse && (
+                            course.status === 'active' ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleUpdateStatus(course.id, 'inactive')}
+                                title="停课"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleUpdateStatus(course.id, 'active')}
+                                title="恢复开课"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )
+                          )}
+                          {canDelete && (
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleUpdateStatus(course.id, 'inactive')}
-                              title="停课"
+                              onClick={() => handleDelete(course.id)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleUpdateStatus(course.id, 'active')}
-                              title="恢复开课"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(course.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                        {!canEditCourse && !canDelete && (
-                          <span className="text-muted-foreground text-xs">无操作权限</span>
-                        )}
-                      </div>
-                    </TableCell>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

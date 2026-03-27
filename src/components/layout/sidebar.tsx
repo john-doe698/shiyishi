@@ -11,6 +11,7 @@ import {
   Menu,
   Shield,
   User,
+  LogOut,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,7 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { role, setRole, roleInfo } = usePermission();
+  const { role, setRole, roleInfo, logout } = usePermission();
 
   return (
     <div
@@ -76,10 +77,10 @@ export function Sidebar() {
         })}
       </nav>
       
-      {/* 角色切换区域 */}
+      {/* 角色切换和退出区域 */}
       <div className="border-t p-3">
         {!collapsed ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {role === 'admin' ? (
                 <Shield className="h-4 w-4 text-primary" />
@@ -102,10 +103,10 @@ export function Sidebar() {
                     <span>{USER_ROLES.admin.label}</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="staff">
+                <SelectItem value="planner">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    <span>{USER_ROLES.staff.label}</span>
+                    <span>{USER_ROLES.planner.label}</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -113,14 +114,31 @@ export function Sidebar() {
             <p className="text-xs text-muted-foreground">
               {roleInfo.description}
             </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={logout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              退出登录
+            </Button>
           </div>
         ) : (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2">
             {role === 'admin' ? (
               <Shield className="h-5 w-5 text-primary" />
             ) : (
               <User className="h-5 w-5 text-muted-foreground" />
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={logout}
+              title="退出登录"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         )}
       </div>
