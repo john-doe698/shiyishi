@@ -255,7 +255,7 @@ export default function DashboardPage() {
             {/* 课时不足 */}
             {lowHoursStudents.length > 0 && (
               <div>
-                <h4 className="font-medium text-yellow-600 mb-2">课时不足 ({lowHoursStudents.length})</h4>
+                <h4 className="font-medium text-yellow-600 mb-2">课时不足（≤6课时）({lowHoursStudents.length})</h4>
                 <div className="space-y-2">
                   {lowHoursStudents.slice(0, 5).map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-2 bg-yellow-50 rounded border border-yellow-200">

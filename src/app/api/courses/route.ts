@@ -7,6 +7,8 @@ const client = getSupabaseClient();
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
+  const education_level = searchParams.get('education_level');
+  const class_type = searchParams.get('class_type');
   
   let query = client
     .from('courses')
@@ -15,6 +17,12 @@ export async function GET(request: NextRequest) {
   
   if (status) {
     query = query.eq('status', status);
+  }
+  if (education_level) {
+    query = query.eq('education_level', education_level);
+  }
+  if (class_type) {
+    query = query.eq('class_type', class_type);
   }
   
   const { data, error } = await query;
@@ -30,7 +38,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, price } = body;
+    const { name, description, price, education_level, class_type } = body;
     
     const { data, error } = await client
       .from('courses')
@@ -38,6 +46,8 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         price: price || '0',
+        education_level: education_level || 'primary',
+        class_type: class_type || 'weekday',
         status: 'active',
       })
       .select()

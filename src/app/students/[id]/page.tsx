@@ -38,6 +38,8 @@ interface StudentDetail {
       id: number;
       name: string;
       price: string;
+      education_level: string;
+      class_type: string;
     } | null;
   }>;
   check_ins: Array<{
@@ -213,6 +215,7 @@ export default function StudentDetailPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>课程</TableHead>
+                  <TableHead className="text-center">班次类型</TableHead>
                   <TableHead className="text-center">购买课时</TableHead>
                   <TableHead className="text-center">剩余课时</TableHead>
                   <TableHead className="text-center">金额</TableHead>
@@ -226,6 +229,18 @@ export default function StudentDetailPage() {
                   <TableRow key={enrollment.id}>
                     <TableCell className="font-medium">
                       {enrollment.courses?.name || '-'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">
+                        {enrollment.courses?.education_level === 'primary' ? '小学' : 
+                         enrollment.courses?.education_level === 'middle' ? '中学' : ''} 
+                        {enrollment.courses?.class_type === 'weekday' ? '周中班' :
+                         enrollment.courses?.class_type === 'weekend' ? '周末班' :
+                         enrollment.courses?.class_type === 'quarter_weekday' ? '周中季卡' :
+                         enrollment.courses?.class_type === 'quarter_weekend' ? '周末季卡' :
+                         enrollment.courses?.class_type === 'semester_weekday' ? '周中学期卡' :
+                         enrollment.courses?.class_type === 'semester_weekend' ? '周末学期卡' : '-'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-center">{enrollment.total_hours}</TableCell>
                     <TableCell className="text-center">{enrollment.remaining_hours}</TableCell>

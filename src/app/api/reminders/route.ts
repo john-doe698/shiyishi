@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: enrollmentError.message }, { status: 500 });
     }
     
-    // 2. 查询课时不足的学生（剩余课时 <= 3）
+    // 2. 查询课时不足的学生（剩余课时 <= 6）
     const { data: lowHoursStudents, error: lowHoursError } = await client
       .from('students')
       .select(`
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('status', 'active')
-      .lte('remaining_hours', 3)
+      .lte('remaining_hours', 6)
       .gt('remaining_hours', 0)
       .order('remaining_hours', { ascending: true });
     

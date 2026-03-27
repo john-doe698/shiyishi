@@ -60,7 +60,7 @@
 | 表名 | 说明 | 主要字段 |
 |------|------|---------|
 | students | 学生表 | id, name, phone, parent_name, parent_phone, status, total_hours, remaining_hours |
-| courses | 课程表 | id, name, description, price, status |
+| courses | 课程表 | id, name, description, price, education_level, class_type, status |
 | enrollments | 报名记录表 | id, student_id, course_id, total_hours, remaining_hours, amount, expiry_date, status |
 | check_ins | 签到记录表 | id, student_id, course_id, check_in_time, hours, status |
 | lesson_consumptions | 消课记录表 | id, student_id, course_id, check_in_id, hours, amount |

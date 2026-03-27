@@ -50,7 +50,24 @@ interface Course {
   id: number;
   name: string;
   price: string;
+  education_level: string;
+  class_type: string;
 }
+
+// 班次类型配置
+const CLASS_TYPE_CONFIG: Record<string, { name: string; hours: number; months: number }> = {
+  weekday: { name: '周中班', hours: 22, months: 1 },
+  weekend: { name: '周末班', hours: 16, months: 1 },
+  quarter_weekday: { name: '周中季卡', hours: 66, months: 3 },
+  quarter_weekend: { name: '周末季卡', hours: 48, months: 3 },
+  semester_weekday: { name: '周中学期卡', hours: 88, months: 4 },
+  semester_weekend: { name: '周末学期卡', hours: 64, months: 4 },
+};
+
+const EDUCATION_LEVEL_MAP: Record<string, string> = {
+  primary: '小学',
+  middle: '中学',
+};
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -126,6 +143,33 @@ export default function StudentsPage() {
       }
     } catch (error) {
       console.error('获取课程列表失败:', error);
+    }
+  };
+
+  // 计算到期日期
+  const calculateExpiryDate = (months: number): string => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + months);
+    return date.toISOString().split('T')[0];
+  };
+
+  // 选择课程时自动计算课时和到期日期
+  const handleCourseSelect = (courseId: string) => {
+    const course = courses.find(c => c.id.toString() === courseId);
+    if (!course) return;
+    
+    const config = CLASS_TYPE_CONFIG[course.class_type];
+    if (config) {
+      const hours = config.hours;
+      const amount = (Number(course.price) * hours).toFixed(2);
+      const expiryDate = calculateExpiryDate(config.months);
+      
+      setEnrollment({
+        course_id: courseId,
+        total_hours: hours,
+        amount,
+        expiry_date: expiryDate,
+      });
     }
   };
 
@@ -380,7 +424,7 @@ export default function StudentsPage() {
                     <TableCell>{student.parent_phone || '-'}</TableCell>
                     <TableCell className="text-center">{student.total_hours}</TableCell>
                     <TableCell className="text-center">
-                      <span className={student.remaining_hours < 5 ? 'text-red-500 font-bold' : ''}>
+                      <span className={student.remaining_hours <= 6 ? 'text-red-500 font-bold' : ''}>
                         {student.remaining_hours}
                       </span>
                     </TableCell>
@@ -445,68 +489,57 @@ export default function StudentsPage() {
 
       {/* 报名弹窗 */}
       <Dialog open={enrollDialogOpen} onOpenChange={setEnrollDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>课程报名</DialogTitle>
             <DialogDescription>
-              为学生 {enrollingStudent?.name} 报名课程
+              为学生 {enrollingStudent?.name} 报名课程（课时和到期日期自动计算）
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>选择课程 *</Label>
+              <Label>选择课程班次 *</Label>
               <Select
                 value={enrollment.course_id}
-                onValueChange={(value) => {
-                  const course = courses.find(c => c.id.toString() === value);
-                  setEnrollment({
-                    ...enrollment,
-                    course_id: value,
-                    amount: course ? (Number(course.price) * enrollment.total_hours).toFixed(2) : '0',
-                  });
-                }}
+                onValueChange={handleCourseSelect}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="请选择课程" />
+                  <SelectValue placeholder="请选择课程班次" />
                 </SelectTrigger>
                 <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id.toString()}>
-                      {course.name} (¥{course.price}/课时)
-                    </SelectItem>
-                  ))}
+                  {courses.map((course) => {
+                    const config = CLASS_TYPE_CONFIG[course.class_type];
+                    return (
+                      <SelectItem key={course.id} value={course.id.toString()}>
+                        {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {config?.name || ''} ({config?.hours || 0}课时/{config?.months || 0}个月)
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <Label>购买课时 *</Label>
-              <Input
-                type="number"
-                min="1"
-                value={enrollment.total_hours}
-                onChange={(e) => {
-                  const hours = parseInt(e.target.value) || 0;
-                  const course = courses.find(c => c.id.toString() === enrollment.course_id);
-                  setEnrollment({
-                    ...enrollment,
-                    total_hours: hours,
-                    amount: course ? (Number(course.price) * hours).toFixed(2) : '0',
-                  });
-                }}
-              />
-            </div>
+            
+            {enrollment.course_id && (
+              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                <p><strong>课时数量：</strong>{enrollment.total_hours} 课时</p>
+                <p><strong>到期日期：</strong>{enrollment.expiry_date}</p>
+                <p><strong>课时价格：</strong>¥{courses.find(c => c.id.toString() === enrollment.course_id)?.price}/课时</p>
+              </div>
+            )}
+            
             <div className="grid gap-2">
               <Label>金额（元）</Label>
               <Input value={enrollment.amount} disabled />
             </div>
+            
             <div className="grid gap-2">
-              <Label>到期日期</Label>
-              <Input
-                type="date"
-                value={enrollment.expiry_date}
-                onChange={(e) => setEnrollment({ ...enrollment, expiry_date: e.target.value })}
+              <Label>备注</Label>
+              <Textarea
+                placeholder="备注信息（可选）"
+                onChange={(e) => {
+                  // 可以扩展添加备注功能
+                }}
               />
-              <p className="text-xs text-muted-foreground">设置课时有效期，到期后将提醒续费</p>
             </div>
           </div>
           <div className="flex justify-end gap-2">

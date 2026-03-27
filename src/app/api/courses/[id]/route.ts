@@ -21,6 +21,8 @@ export async function PUT(
     if (description !== undefined) updateData.description = description || null;
     if (price !== undefined) updateData.price = price;
     if (status !== undefined) updateData.status = status;
+    if (body.education_level !== undefined) updateData.education_level = body.education_level;
+    if (body.class_type !== undefined) updateData.class_type = body.class_type;
     
     const { data, error } = await client
       .from('courses')
