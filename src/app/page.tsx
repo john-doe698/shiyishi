@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Calendar, BookOpen, Clock, TrendingUp } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Users, Calendar, BookOpen, Clock, TrendingUp, AlertTriangle, BellRing } from 'lucide-react';
+import Link from 'next/link';
 
 interface Stats {
   totalStudents: number;
@@ -12,12 +15,63 @@ interface Stats {
   monthTotalAmount: number;
 }
 
+interface ExpiringEnrollment {
+  id: number;
+  total_hours: number;
+  remaining_hours: number;
+  amount: string;
+  expiry_date: string;
+  students: {
+    id: number;
+    name: string;
+    phone: string | null;
+    parent_name: string | null;
+    parent_phone: string | null;
+  } | null;
+  courses: {
+    id: number;
+    name: string;
+    price: string;
+  } | null;
+}
+
+interface LowHoursStudent {
+  id: number;
+  name: string;
+  phone: string | null;
+  parent_name: string | null;
+  parent_phone: string | null;
+  remaining_hours: number;
+}
+
+interface ExpiredEnrollment {
+  id: number;
+  total_hours: number;
+  remaining_hours: number;
+  expiry_date: string;
+  students: {
+    id: number;
+    name: string;
+    phone: string | null;
+  } | null;
+  courses: {
+    id: number;
+    name: string;
+  } | null;
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // 续费提醒
+  const [expiringEnrollments, setExpiringEnrollments] = useState<ExpiringEnrollment[]>([]);
+  const [lowHoursStudents, setLowHoursStudents] = useState<LowHoursStudent[]>([]);
+  const [expiredEnrollments, setExpiredEnrollments] = useState<ExpiredEnrollment[]>([]);
 
   useEffect(() => {
     fetchStats();
+    fetchReminders();
   }, []);
 
   const fetchStats = async () => {
@@ -34,6 +88,36 @@ export default function DashboardPage() {
     }
   };
 
+  const fetchReminders = async () => {
+    try {
+      const response = await fetch('/api/reminders?days=7');
+      const result = await response.json();
+      if (result.data) {
+        setExpiringEnrollments(result.data.expiringEnrollments || []);
+        setLowHoursStudents(result.data.lowHoursStudents || []);
+        setExpiredEnrollments(result.data.expiredEnrollments || []);
+      }
+    } catch (error) {
+      console.error('获取续费提醒失败:', error);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  const getDaysUntilExpiry = (expiryDate: string) => {
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const diffTime = expiry.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -41,6 +125,8 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const hasReminders = expiringEnrollments.length > 0 || lowHoursStudents.length > 0 || expiredEnrollments.length > 0;
 
   return (
     <div className="space-y-6">
@@ -95,6 +181,108 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* 续费提醒模块 */}
+      {hasReminders && (
+        <Card className="border-orange-200 bg-orange-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-700">
+              <BellRing className="h-5 w-5" />
+              续费提醒
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 已过期 */}
+            {expiredEnrollments.length > 0 && (
+              <div>
+                <h4 className="font-medium text-red-600 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  已过期 ({expiredEnrollments.length})
+                </h4>
+                <div className="space-y-2">
+                  {expiredEnrollments.slice(0, 5).map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
+                      <div>
+                        <span className="font-medium">{item.students?.name || '-'}</span>
+                        <span className="text-muted-foreground mx-2">|</span>
+                        <span>{item.courses?.name || '-'}</span>
+                        <span className="text-muted-foreground mx-2">|</span>
+                        <span className="text-red-600">剩余 {item.remaining_hours} 课时已过期</span>
+                      </div>
+                      <Link href={`/students/${item.students?.id}`}>
+                        <Button variant="outline" size="sm">查看</Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 即将到期 */}
+            {expiringEnrollments.length > 0 && (
+              <div>
+                <h4 className="font-medium text-orange-600 mb-2">即将到期 ({expiringEnrollments.length})</h4>
+                <div className="space-y-2">
+                  {expiringEnrollments.slice(0, 5).map((item) => {
+                    const daysLeft = getDaysUntilExpiry(item.expiry_date);
+                    return (
+                      <div key={item.id} className="flex items-center justify-between p-2 bg-orange-50 rounded border border-orange-200">
+                        <div>
+                          <span className="font-medium">{item.students?.name || '-'}</span>
+                          <span className="text-muted-foreground mx-2">|</span>
+                          <span>{item.courses?.name || '-'}</span>
+                          <span className="text-muted-foreground mx-2">|</span>
+                          <span className="text-orange-600">{daysLeft} 天后到期</span>
+                          <span className="text-muted-foreground mx-2">|</span>
+                          <span>剩余 {item.remaining_hours} 课时</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {item.students?.parent_phone && (
+                            <a href={`tel:${item.students.parent_phone}`} className="text-sm text-blue-600 hover:underline">
+                              联系家长
+                            </a>
+                          )}
+                          <Link href={`/students/${item.students?.id}`}>
+                            <Button variant="outline" size="sm">查看</Button>
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 课时不足 */}
+            {lowHoursStudents.length > 0 && (
+              <div>
+                <h4 className="font-medium text-yellow-600 mb-2">课时不足 ({lowHoursStudents.length})</h4>
+                <div className="space-y-2">
+                  {lowHoursStudents.slice(0, 5).map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-2 bg-yellow-50 rounded border border-yellow-200">
+                      <div>
+                        <span className="font-medium">{item.name}</span>
+                        <span className="text-muted-foreground mx-2">|</span>
+                        <Badge variant="destructive">剩余 {item.remaining_hours} 课时</Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {item.parent_phone && (
+                          <a href={`tel:${item.parent_phone}`} className="text-sm text-blue-600 hover:underline">
+                            联系家长
+                          </a>
+                        )}
+                        <Link href={`/students/${item.id}`}>
+                          <Button variant="outline" size="sm">续费</Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -139,6 +327,7 @@ export default function DashboardPage() {
               <li><strong>课程管理</strong>：创建课程、设置课时价格</li>
               <li><strong>签到管理</strong>：学生签到、自动扣减课时</li>
               <li><strong>消课记录</strong>：查看课时消耗明细和消费金额</li>
+              <li><strong>续费提醒</strong>：即将到期、已过期、课时不足提醒</li>
             </ul>
           </CardContent>
         </Card>

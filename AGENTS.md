@@ -10,6 +10,7 @@
 2. **课程管理**：创建课程、设置课时价格、管理课程状态
 3. **签到管理**：学生签到、请假、缺勤记录，自动扣减课时
 4. **消课记录**：查看课时消耗明细和消费金额统计
+5. **续费提醒**：即将到期提醒、已过期提醒、课时不足提醒
 
 ### 版本技术栈
 
@@ -60,7 +61,7 @@
 |------|------|---------|
 | students | 学生表 | id, name, phone, parent_name, parent_phone, status, total_hours, remaining_hours |
 | courses | 课程表 | id, name, description, price, status |
-| enrollments | 报名记录表 | id, student_id, course_id, total_hours, remaining_hours, amount, status |
+| enrollments | 报名记录表 | id, student_id, course_id, total_hours, remaining_hours, amount, expiry_date, status |
 | check_ins | 签到记录表 | id, student_id, course_id, check_in_time, hours, status |
 | lesson_consumptions | 消课记录表 | id, student_id, course_id, check_in_id, hours, amount |
 
@@ -75,6 +76,7 @@
 | /api/enrollments | GET, POST | 获取报名记录/学生报名 |
 | /api/check-ins | GET, POST | 获取签到记录/学生签到 |
 | /api/consumptions | GET | 获取消课记录 |
+| /api/reminders | GET | 获取续费提醒（即将到期/已过期/课时不足） |
 | /api/stats | GET | 获取统计数据 |
 
 ## 包管理规范

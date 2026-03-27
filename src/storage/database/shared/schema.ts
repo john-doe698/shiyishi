@@ -56,6 +56,7 @@ export const enrollments = pgTable(
     total_hours: integer("total_hours").notNull().default(0), // 购买总课时
     remaining_hours: integer("remaining_hours").notNull().default(0), // 剩余课时
     amount: numeric("amount", { precision: 10, scale: 2 }).notNull().default('0'), // 报名金额
+    expiry_date: timestamp("expiry_date", { withTimezone: true }), // 到期日期
     status: varchar("status", { length: 20 }).notNull().default('active'), // active: 有效, expired: 已过期
     remark: text("remark"),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -65,6 +66,7 @@ export const enrollments = pgTable(
     index("enrollments_student_id_idx").on(table.student_id),
     index("enrollments_course_id_idx").on(table.course_id),
     index("enrollments_status_idx").on(table.status),
+    index("enrollments_expiry_date_idx").on(table.expiry_date),
   ]
 );
 

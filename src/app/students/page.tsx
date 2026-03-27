@@ -77,6 +77,7 @@ export default function StudentsPage() {
     course_id: '',
     total_hours: 0,
     amount: '0',
+    expiry_date: '',
   });
 
   useEffect(() => {
@@ -185,7 +186,7 @@ export default function StudentsPage() {
       if (result.data) {
         setEnrollDialogOpen(false);
         setEnrollingStudent(null);
-        setEnrollment({ course_id: '', total_hours: 0, amount: '0' });
+        setEnrollment({ course_id: '', total_hours: 0, amount: '0', expiry_date: '' });
         fetchStudents();
       } else if (result.error) {
         alert(result.error);
@@ -497,6 +498,15 @@ export default function StudentsPage() {
             <div className="grid gap-2">
               <Label>金额（元）</Label>
               <Input value={enrollment.amount} disabled />
+            </div>
+            <div className="grid gap-2">
+              <Label>到期日期</Label>
+              <Input
+                type="date"
+                value={enrollment.expiry_date}
+                onChange={(e) => setEnrollment({ ...enrollment, expiry_date: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">设置课时有效期，到期后将提醒续费</p>
             </div>
           </div>
           <div className="flex justify-end gap-2">

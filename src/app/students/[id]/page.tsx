@@ -32,6 +32,7 @@ interface StudentDetail {
     remaining_hours: number;
     amount: string;
     status: string;
+    expiry_date: string | null;
     created_at: string;
     courses: {
       id: number;
@@ -215,6 +216,7 @@ export default function StudentDetailPage() {
                   <TableHead className="text-center">购买课时</TableHead>
                   <TableHead className="text-center">剩余课时</TableHead>
                   <TableHead className="text-center">金额</TableHead>
+                  <TableHead className="text-center">到期日期</TableHead>
                   <TableHead className="text-center">状态</TableHead>
                   <TableHead>报名时间</TableHead>
                 </TableRow>
@@ -228,6 +230,9 @@ export default function StudentDetailPage() {
                     <TableCell className="text-center">{enrollment.total_hours}</TableCell>
                     <TableCell className="text-center">{enrollment.remaining_hours}</TableCell>
                     <TableCell className="text-center">¥{enrollment.amount}</TableCell>
+                    <TableCell className="text-center">
+                      {enrollment.expiry_date ? formatDate(enrollment.expiry_date).split(' ')[0] : '-'}
+                    </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={enrollment.status === 'active' ? 'default' : 'secondary'}>
                         {enrollment.status === 'active' ? '有效' : '已过期'}
