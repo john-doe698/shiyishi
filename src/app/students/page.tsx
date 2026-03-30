@@ -86,6 +86,12 @@ export default function StudentsPage() {
     parent_phone: '',
     total_hours: 0,
     remark: '',
+    // 课程报名相关字段
+    course_id: '',
+    course_total_hours: 0,
+    course_amount: '0',
+    course_start_date: '',
+    course_expiry_date: '',
   });
   
   // 报名弹窗
@@ -163,6 +169,36 @@ export default function StudentsPage() {
     });
   };
 
+  // 新学生选择课程时自动填充
+  const handleNewStudentCourseSelect = (courseId: string) => {
+    if (!courseId) {
+      // 清空课程相关字段
+      setNewStudent({
+        ...newStudent,
+        course_id: '',
+        course_total_hours: 0,
+        course_amount: '0',
+        course_start_date: '',
+        course_expiry_date: '',
+        total_hours: newStudent.total_hours, // 保留手动输入的课时
+      });
+      return;
+    }
+    
+    const course = courses.find(c => c.id.toString() === courseId);
+    if (!course) return;
+    
+    setNewStudent({
+      ...newStudent,
+      course_id: courseId,
+      course_total_hours: course.total_hours,
+      course_amount: course.price,
+      course_start_date: course.valid_start_date ? course.valid_start_date.split('T')[0] : new Date().toISOString().split('T')[0],
+      course_expiry_date: course.valid_end_date ? course.valid_end_date.split('T')[0] : '',
+      total_hours: course.total_hours, // 自动填充课时
+    });
+  };
+
   const handleAddStudent = async () => {
     if (!newStudent.name.trim()) {
       alert('请输入学生姓名');
@@ -170,14 +206,45 @@ export default function StudentsPage() {
     }
 
     try {
+      // 1. 添加学生
       const response = await fetch('/api/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newStudent),
+        body: JSON.stringify({
+          name: newStudent.name,
+          phone: newStudent.phone,
+          parent_name: newStudent.parent_name,
+          parent_phone: newStudent.parent_phone,
+          total_hours: newStudent.course_id ? newStudent.course_total_hours : newStudent.total_hours,
+          remark: newStudent.remark,
+        }),
       });
       
       const result = await response.json();
       if (result.data) {
+        const studentId = result.data.id;
+        
+        // 2. 如果选择了课程，同时创建报名记录
+        if (newStudent.course_id && newStudent.course_total_hours > 0) {
+          const enrollResponse = await fetch('/api/enrollments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              student_id: studentId,
+              course_id: newStudent.course_id,
+              total_hours: newStudent.course_total_hours,
+              amount: newStudent.course_amount,
+              start_date: newStudent.course_start_date,
+              expiry_date: newStudent.course_expiry_date,
+            }),
+          });
+          
+          const enrollResult = await enrollResponse.json();
+          if (enrollResult.error) {
+            alert('学生添加成功，但报名失败：' + enrollResult.error);
+          }
+        }
+        
         setAddDialogOpen(false);
         setNewStudent({
           name: '',
@@ -186,6 +253,11 @@ export default function StudentsPage() {
           parent_phone: '',
           total_hours: 0,
           remark: '',
+          course_id: '',
+          course_total_hours: 0,
+          course_amount: '0',
+          course_start_date: '',
+          course_expiry_date: '',
         });
         fetchStudents();
       } else if (result.error) {
@@ -357,60 +429,100 @@ export default function StudentsPage() {
               添加学生
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>添加学生</DialogTitle>
-              <DialogDescription>录入新学生信息</DialogDescription>
+              <DialogDescription>录入新学生信息，可选择同时报名课程</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">学生姓名 *</Label>
-                <Input
-                  id="name"
-                  value={newStudent.name}
-                  onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                  placeholder="请输入学生姓名"
-                />
+            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+              {/* 基本信息 */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground">基本信息</h4>
+                <div className="grid gap-2">
+                  <Label htmlFor="name">学生姓名 *</Label>
+                  <Input
+                    id="name"
+                    value={newStudent.name}
+                    onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                    placeholder="请输入学生姓名"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">联系电话</Label>
+                  <Input
+                    id="phone"
+                    value={newStudent.phone}
+                    onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
+                    placeholder="请输入联系电话"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="parent_name">家长姓名</Label>
+                  <Input
+                    id="parent_name"
+                    value={newStudent.parent_name}
+                    onChange={(e) => setNewStudent({ ...newStudent, parent_name: e.target.value })}
+                    placeholder="请输入家长姓名"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="parent_phone">家长电话</Label>
+                  <Input
+                    id="parent_phone"
+                    value={newStudent.parent_phone}
+                    onChange={(e) => setNewStudent({ ...newStudent, parent_phone: e.target.value })}
+                    placeholder="请输入家长电话"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">联系电话</Label>
-                <Input
-                  id="phone"
-                  value={newStudent.phone}
-                  onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
-                  placeholder="请输入联系电话"
-                />
+              
+              {/* 课程报名（可选） */}
+              <div className="space-y-2 pt-2 border-t">
+                <h4 className="text-sm font-medium text-muted-foreground">课程报名（可选）</h4>
+                <div className="grid gap-2">
+                  <Label>选择课程班次</Label>
+                  <Select
+                    value={newStudent.course_id}
+                    onValueChange={handleNewStudentCourseSelect}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="不报名课程（可选）" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((course) => (
+                        <SelectItem key={course.id} value={course.id.toString()}>
+                          {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/¥{course.price})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {newStudent.course_id && (
+                  <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                    <p><strong>课时数量：</strong>{newStudent.course_total_hours} 课时</p>
+                    <p><strong>有效期：</strong>{newStudent.course_start_date} 至 {newStudent.course_expiry_date}</p>
+                    <p><strong>价格：</strong>¥{newStudent.course_amount}</p>
+                  </div>
+                )}
+                
+                {!newStudent.course_id && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="total_hours">初始课时</Label>
+                    <Input
+                      id="total_hours"
+                      type="number"
+                      min="0"
+                      value={newStudent.total_hours}
+                      onChange={(e) => setNewStudent({ ...newStudent, total_hours: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                    />
+                  </div>
+                )}
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="parent_name">家长姓名</Label>
-                <Input
-                  id="parent_name"
-                  value={newStudent.parent_name}
-                  onChange={(e) => setNewStudent({ ...newStudent, parent_name: e.target.value })}
-                  placeholder="请输入家长姓名"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="parent_phone">家长电话</Label>
-                <Input
-                  id="parent_phone"
-                  value={newStudent.parent_phone}
-                  onChange={(e) => setNewStudent({ ...newStudent, parent_phone: e.target.value })}
-                  placeholder="请输入家长电话"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="total_hours">初始课时</Label>
-                <Input
-                  id="total_hours"
-                  type="number"
-                  min="0"
-                  value={newStudent.total_hours}
-                  onChange={(e) => setNewStudent({ ...newStudent, total_hours: parseInt(e.target.value) || 0 })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="grid gap-2">
+              
+              {/* 备注 */}
+              <div className="grid gap-2 pt-2 border-t">
                 <Label htmlFor="remark">备注</Label>
                 <Textarea
                   id="remark"
@@ -424,7 +536,9 @@ export default function StudentsPage() {
               <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
                 取消
               </Button>
-              <Button onClick={handleAddStudent}>确认添加</Button>
+              <Button onClick={handleAddStudent}>
+                {newStudent.course_id ? '添加并报名' : '确认添加'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
