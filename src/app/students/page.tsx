@@ -54,8 +54,6 @@ interface Course {
   education_level: string;
   class_name: string | null;
   total_hours: number;
-  valid_start_date: string | null;
-  valid_end_date: string | null;
 }
 
 const EDUCATION_LEVEL_MAP: Record<string, string> = {
@@ -84,14 +82,13 @@ export default function StudentsPage() {
     phone: '',
     parent_name: '',
     parent_phone: '',
-    total_hours: 0,
     remark: '',
     // 课程报名相关字段
     course_id: '',
-    course_total_hours: 0,
-    course_amount: '0',
-    course_start_date: '',
-    course_expiry_date: '',
+    course_total_hours: 0,  // 自定义课时数
+    course_amount: '0',      // 自定义金额
+    valid_start_date: '',    // 有效期开始日期
+    valid_end_date: '',      // 有效期结束日期
   });
   
   // 报名弹窗
@@ -154,22 +151,22 @@ export default function StudentsPage() {
     }
   };
 
-  // 选择课程时自动填充课时、价格和有效期
+  // 选择课程时自动填充课时、价格（报名弹窗）
   const handleCourseSelect = (courseId: string) => {
     const course = courses.find(c => c.id.toString() === courseId);
     if (!course) return;
     
-    // 使用课程的课时、价格和有效期
+    // 使用课程的课时和价格作为参考值，有效期需要手动输入
     setEnrollment({
       course_id: courseId,
       total_hours: course.total_hours,
-      amount: course.price, // 直接使用课程价格
-      start_date: course.valid_start_date ? course.valid_start_date.split('T')[0] : new Date().toISOString().split('T')[0],
-      expiry_date: course.valid_end_date ? course.valid_end_date.split('T')[0] : '',
+      amount: course.price,
+      start_date: new Date().toISOString().split('T')[0],
+      expiry_date: '',
     });
   };
 
-  // 新学生选择课程时自动填充
+  // 新学生选择课程时自动填充参考值
   const handleNewStudentCourseSelect = (courseId: string) => {
     if (!courseId) {
       // 清空课程相关字段
@@ -178,9 +175,8 @@ export default function StudentsPage() {
         course_id: '',
         course_total_hours: 0,
         course_amount: '0',
-        course_start_date: '',
-        course_expiry_date: '',
-        total_hours: newStudent.total_hours, // 保留手动输入的课时
+        valid_start_date: '',
+        valid_end_date: '',
       });
       return;
     }
@@ -188,14 +184,14 @@ export default function StudentsPage() {
     const course = courses.find(c => c.id.toString() === courseId);
     if (!course) return;
     
+    // 自动填充课时和价格作为参考值，有效期默认为今天开始
     setNewStudent({
       ...newStudent,
       course_id: courseId,
       course_total_hours: course.total_hours,
       course_amount: course.price,
-      course_start_date: course.valid_start_date ? course.valid_start_date.split('T')[0] : new Date().toISOString().split('T')[0],
-      course_expiry_date: course.valid_end_date ? course.valid_end_date.split('T')[0] : '',
-      total_hours: course.total_hours, // 自动填充课时
+      valid_start_date: new Date().toISOString().split('T')[0],
+      valid_end_date: '',
     });
   };
 
@@ -215,7 +211,7 @@ export default function StudentsPage() {
           phone: newStudent.phone,
           parent_name: newStudent.parent_name,
           parent_phone: newStudent.parent_phone,
-          total_hours: newStudent.course_id ? newStudent.course_total_hours : newStudent.total_hours,
+          total_hours: newStudent.course_total_hours || 0,
           remark: newStudent.remark,
         }),
       });
@@ -234,8 +230,8 @@ export default function StudentsPage() {
               course_id: newStudent.course_id,
               total_hours: newStudent.course_total_hours,
               amount: newStudent.course_amount,
-              start_date: newStudent.course_start_date,
-              expiry_date: newStudent.course_expiry_date,
+              start_date: newStudent.valid_start_date,
+              expiry_date: newStudent.valid_end_date,
             }),
           });
           
@@ -251,13 +247,12 @@ export default function StudentsPage() {
           phone: '',
           parent_name: '',
           parent_phone: '',
-          total_hours: 0,
           remark: '',
           course_id: '',
           course_total_hours: 0,
           course_amount: '0',
-          course_start_date: '',
-          course_expiry_date: '',
+          valid_start_date: '',
+          valid_end_date: '',
         });
         fetchStudents();
       } else if (result.error) {
@@ -476,22 +471,22 @@ export default function StudentsPage() {
                 </div>
               </div>
               
-              {/* 课程报名（可选） */}
-              <div className="space-y-2 pt-2 border-t">
-                <h4 className="text-sm font-medium text-muted-foreground">课程报名（可选）</h4>
+              {/* 课程报名 */}
+              <div className="space-y-3 pt-2 border-t">
+                <h4 className="text-sm font-medium text-muted-foreground">课程报名</h4>
                 <div className="grid gap-2">
-                  <Label>选择课程班次</Label>
+                  <Label>选择课程班次 *</Label>
                   <Select
                     value={newStudent.course_id}
                     onValueChange={handleNewStudentCourseSelect}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="不报名课程（可选）" />
+                      <SelectValue placeholder="请选择课程班次" />
                     </SelectTrigger>
                     <SelectContent>
                       {courses.map((course) => (
                         <SelectItem key={course.id} value={course.id.toString()}>
-                          {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/¥{course.price})
+                          {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -499,25 +494,54 @@ export default function StudentsPage() {
                 </div>
                 
                 {newStudent.course_id && (
-                  <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-                    <p><strong>课时数量：</strong>{newStudent.course_total_hours} 课时</p>
-                    <p><strong>有效期：</strong>{newStudent.course_start_date} 至 {newStudent.course_expiry_date}</p>
-                    <p><strong>价格：</strong>¥{newStudent.course_amount}</p>
-                  </div>
-                )}
-                
-                {!newStudent.course_id && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="total_hours">初始课时</Label>
-                    <Input
-                      id="total_hours"
-                      type="number"
-                      min="0"
-                      value={newStudent.total_hours}
-                      onChange={(e) => setNewStudent({ ...newStudent, total_hours: parseInt(e.target.value) || 0 })}
-                      placeholder="0"
-                    />
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="course_total_hours">课时数</Label>
+                        <Input
+                          id="course_total_hours"
+                          type="number"
+                          min="1"
+                          value={newStudent.course_total_hours}
+                          onChange={(e) => setNewStudent({ ...newStudent, course_total_hours: parseInt(e.target.value) || 0 })}
+                          placeholder="输入课时数"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="course_amount">金额（元）</Label>
+                        <Input
+                          id="course_amount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={newStudent.course_amount}
+                          onChange={(e) => setNewStudent({ ...newStudent, course_amount: e.target.value })}
+                          placeholder="输入金额"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="valid_start_date">有效期开始</Label>
+                        <Input
+                          id="valid_start_date"
+                          type="date"
+                          value={newStudent.valid_start_date}
+                          onChange={(e) => setNewStudent({ ...newStudent, valid_start_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="valid_end_date">有效期结束</Label>
+                        <Input
+                          id="valid_end_date"
+                          type="date"
+                          value={newStudent.valid_end_date}
+                          onChange={(e) => setNewStudent({ ...newStudent, valid_end_date: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
               
@@ -537,7 +561,7 @@ export default function StudentsPage() {
                 取消
               </Button>
               <Button onClick={handleAddStudent}>
-                {newStudent.course_id ? '添加并报名' : '确认添加'}
+                添加并报名
               </Button>
             </div>
           </DialogContent>
@@ -626,7 +650,7 @@ export default function StudentsPage() {
           <DialogHeader>
             <DialogTitle>课程报名</DialogTitle>
             <DialogDescription>
-              为学生 {enrollingStudent?.name} 报名课程（课时和到期日期自动计算）
+              为学生 {enrollingStudent?.name} 报名课程
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -642,7 +666,7 @@ export default function StudentsPage() {
                 <SelectContent>
                   {courses.map((course) => (
                     <SelectItem key={course.id} value={course.id.toString()}>
-                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/有效期:{formatDate(course.valid_start_date)}至{formatDate(course.valid_end_date)})
+                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -650,17 +674,53 @@ export default function StudentsPage() {
             </div>
             
             {enrollment.course_id && (
-              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-                <p><strong>课时数量：</strong>{enrollment.total_hours} 课时</p>
-                <p><strong>有效期：</strong>{enrollment.start_date} 至 {enrollment.expiry_date}</p>
-                <p><strong>价格：</strong>¥{courses.find(c => c.id.toString() === enrollment.course_id)?.price}</p>
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="enroll_total_hours">课时数</Label>
+                    <Input
+                      id="enroll_total_hours"
+                      type="number"
+                      min="1"
+                      value={enrollment.total_hours}
+                      onChange={(e) => setEnrollment({ ...enrollment, total_hours: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="enroll_amount">金额（元）</Label>
+                    <Input
+                      id="enroll_amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={enrollment.amount}
+                      onChange={(e) => setEnrollment({ ...enrollment, amount: e.target.value })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="enroll_start_date">有效期开始</Label>
+                    <Input
+                      id="enroll_start_date"
+                      type="date"
+                      value={enrollment.start_date}
+                      onChange={(e) => setEnrollment({ ...enrollment, start_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="enroll_expiry_date">有效期结束</Label>
+                    <Input
+                      id="enroll_expiry_date"
+                      type="date"
+                      value={enrollment.expiry_date}
+                      onChange={(e) => setEnrollment({ ...enrollment, expiry_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </>
             )}
-            
-            <div className="grid gap-2">
-              <Label>金额（元）</Label>
-              <Input value={enrollment.amount} disabled />
-            </div>
             
             <div className="grid gap-2">
               <Label>备注</Label>

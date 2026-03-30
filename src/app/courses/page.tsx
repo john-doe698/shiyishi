@@ -41,8 +41,6 @@ interface Course {
   education_level: string;
   class_name: string | null;
   total_hours: number;
-  valid_start_date: string | null;
-  valid_end_date: string | null;
   status: string;
   created_at: string;
   student_names?: string[];
@@ -68,8 +66,6 @@ export default function CoursesPage() {
     education_level: 'primary',
     class_name: '',
     total_hours: 22,
-    valid_start_date: '',
-    valid_end_date: '',
   });
 
   useEffect(() => {
@@ -107,8 +103,6 @@ export default function CoursesPage() {
           education_level: newCourse.education_level,
           class_name: newCourse.class_name || null,
           total_hours: newCourse.total_hours || 0,
-          valid_start_date: newCourse.valid_start_date || null,
-          valid_end_date: newCourse.valid_end_date || null,
         }),
       });
       
@@ -122,8 +116,6 @@ export default function CoursesPage() {
           education_level: 'primary',
           class_name: '',
           total_hours: 22,
-          valid_start_date: '',
-          valid_end_date: '',
         });
         fetchCourses();
       } else if (result.error) {
@@ -271,27 +263,6 @@ export default function CoursesPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="valid_start_date">有效期开始</Label>
-                    <Input
-                      id="valid_start_date"
-                      type="date"
-                      value={newCourse.valid_start_date}
-                      onChange={(e) => setNewCourse({ ...newCourse, valid_start_date: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="valid_end_date">有效期结束</Label>
-                    <Input
-                      id="valid_end_date"
-                      type="date"
-                      value={newCourse.valid_end_date}
-                      onChange={(e) => setNewCourse({ ...newCourse, valid_end_date: e.target.value })}
-                    />
-                  </div>
-                </div>
-                
                 <div className="grid gap-2">
                   <Label htmlFor="description">课程描述</Label>
                   <Textarea
@@ -300,16 +271,6 @@ export default function CoursesPage() {
                     onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                     placeholder="课程描述（可选）"
                   />
-                </div>
-                
-                {/* 预览 */}
-                <div className="p-3 bg-muted rounded-lg text-sm">
-                  <p className="font-medium mb-2">报名时将自动填充：</p>
-                  <div className="grid grid-cols-2 gap-2 text-muted-foreground">
-                    <p>课时：{newCourse.total_hours} 课时</p>
-                    <p>价格：¥{newCourse.price}</p>
-                    <p className="col-span-2">有效期：{formatValidDate(newCourse.valid_start_date, newCourse.valid_end_date)}</p>
-                  </div>
                 </div>
               </div>
               <div className="flex justify-end gap-2">
@@ -344,7 +305,6 @@ export default function CoursesPage() {
                   <TableHead className="text-center">班次名称</TableHead>
                   <TableHead className="text-center">课时</TableHead>
                   <TableHead className="text-center">价格</TableHead>
-                  <TableHead>有效期</TableHead>
                   <TableHead className="text-center">在读学生</TableHead>
                   <TableHead className="text-center">状态</TableHead>
                   {showActions && <TableHead className="text-right">操作</TableHead>}
@@ -366,9 +326,6 @@ export default function CoursesPage() {
                     </TableCell>
                     <TableCell className="text-center">{course.total_hours}</TableCell>
                     <TableCell className="text-center">¥{course.price}</TableCell>
-                    <TableCell className="text-sm">
-                      {formatValidDate(course.valid_start_date, course.valid_end_date)}
-                    </TableCell>
                     <TableCell className="text-center">
                       <div className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-1">
