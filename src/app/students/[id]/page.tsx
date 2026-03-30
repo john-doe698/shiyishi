@@ -80,7 +80,6 @@ interface Course {
   education_level: string;
   class_name: string | null;
   total_hours: number;
-  valid_months: number;
 }
 
 const EDUCATION_LEVEL_MAP: Record<string, string> = {
@@ -109,8 +108,9 @@ export default function StudentDetailPage() {
   const [renewData, setRenewData] = useState({
     course_id: '',
     total_hours: 0,
-    valid_months: 1,
     amount: '0',
+    valid_start_date: '',
+    valid_end_date: '',
   });
 
   useEffect(() => {
@@ -186,34 +186,35 @@ export default function StudentDetailPage() {
     // 默认选择相同的课程
     const course = courses.find(c => c.id === enrollment.courses?.id);
     if (course) {
-      const amount = (Number(course.price) * course.total_hours).toFixed(2);
       setRenewData({
         course_id: course.id.toString(),
         total_hours: course.total_hours,
-        valid_months: course.valid_months,
-        amount,
+        amount: course.price, // 直接使用课程价格（总价格）
+        valid_start_date: new Date().toISOString().split('T')[0],
+        valid_end_date: '',
       });
     } else {
       setRenewData({
         course_id: '',
         total_hours: 0,
-        valid_months: 1,
         amount: '0',
+        valid_start_date: new Date().toISOString().split('T')[0],
+        valid_end_date: '',
       });
     }
     setRenewDialogOpen(true);
   };
 
-  // 选择续费课程时自动计算
+  // 选择续费课程时自动填充参考值
   const handleRenewCourseSelect = (courseId: string) => {
     const course = courses.find(c => c.id.toString() === courseId);
     if (course) {
-      const amount = (Number(course.price) * course.total_hours).toFixed(2);
       setRenewData({
         course_id: courseId,
         total_hours: course.total_hours,
-        valid_months: course.valid_months,
-        amount,
+        amount: course.price, // 直接使用课程价格（总价格）
+        valid_start_date: new Date().toISOString().split('T')[0],
+        valid_end_date: '',
       });
     }
   };
@@ -224,12 +225,16 @@ export default function StudentDetailPage() {
       alert('请选择课程');
       return;
     }
+    if (renewData.total_hours <= 0) {
+      alert('请输入有效的课时数');
+      return;
+    }
+    if (!renewData.valid_start_date || !renewData.valid_end_date) {
+      alert('请选择有效期');
+      return;
+    }
 
     try {
-      const startDate = new Date();
-      const expiryDate = new Date();
-      expiryDate.setMonth(expiryDate.getMonth() + renewData.valid_months);
-
       const response = await fetch('/api/enrollments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -238,8 +243,8 @@ export default function StudentDetailPage() {
           course_id: parseInt(renewData.course_id),
           total_hours: renewData.total_hours,
           amount: renewData.amount,
-          start_date: startDate.toISOString(),
-          expiry_date: expiryDate.toISOString(),
+          start_date: renewData.valid_start_date,
+          expiry_date: renewData.valid_end_date,
         }),
       });
 
@@ -578,7 +583,7 @@ export default function StudentDetailPage() {
                 <SelectContent>
                   {courses.map((course) => (
                     <SelectItem key={course.id} value={course.id.toString()}>
-                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level as keyof typeof EDUCATION_LEVEL_MAP] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/{course.valid_months}个月)
+                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level as keyof typeof EDUCATION_LEVEL_MAP] || ''} {course.class_name ? `(${course.class_name})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -586,11 +591,52 @@ export default function StudentDetailPage() {
             </div>
             
             {renewData.course_id && (
-              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-                <p><strong>课时数量：</strong>{renewData.total_hours} 课时</p>
-                <p><strong>有效期：</strong>{renewData.valid_months} 个月</p>
-                <p><strong>金额：</strong>¥{renewData.amount}</p>
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="renew_total_hours">课时数</Label>
+                    <Input
+                      id="renew_total_hours"
+                      type="number"
+                      min="1"
+                      value={renewData.total_hours}
+                      onChange={(e) => setRenewData({ ...renewData, total_hours: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="renew_amount">金额（元）</Label>
+                    <Input
+                      id="renew_amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={renewData.amount}
+                      onChange={(e) => setRenewData({ ...renewData, amount: e.target.value })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="renew_start_date">有效期开始</Label>
+                    <Input
+                      id="renew_start_date"
+                      type="date"
+                      value={renewData.valid_start_date}
+                      onChange={(e) => setRenewData({ ...renewData, valid_start_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="renew_end_date">有效期结束</Label>
+                    <Input
+                      id="renew_end_date"
+                      type="date"
+                      value={renewData.valid_end_date}
+                      onChange={(e) => setRenewData({ ...renewData, valid_end_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </>
             )}
           </div>
           <div className="flex justify-end gap-2">
