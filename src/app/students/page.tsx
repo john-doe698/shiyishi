@@ -200,9 +200,21 @@ export default function StudentsPage() {
       alert('请输入学生姓名');
       return;
     }
+    if (!newStudent.course_id) {
+      alert('请选择课程班次');
+      return;
+    }
+    if (newStudent.course_total_hours <= 0) {
+      alert('请输入有效的课时数');
+      return;
+    }
+    if (!newStudent.valid_start_date || !newStudent.valid_end_date) {
+      alert('请选择有效期');
+      return;
+    }
 
     try {
-      // 1. 添加学生
+      // 1. 添加学生（课时由报名记录管理，初始为0）
       const response = await fetch('/api/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,7 +223,7 @@ export default function StudentsPage() {
           phone: newStudent.phone,
           parent_name: newStudent.parent_name,
           parent_phone: newStudent.parent_phone,
-          total_hours: newStudent.course_total_hours || 0,
+          total_hours: 0, // 初始课时为0，由报名记录累加
           remark: newStudent.remark,
         }),
       });
@@ -220,7 +232,7 @@ export default function StudentsPage() {
       if (result.data) {
         const studentId = result.data.id;
         
-        // 2. 如果选择了课程，同时创建报名记录
+        // 2. 创建报名记录（报名API会自动更新学生课时）
         if (newStudent.course_id && newStudent.course_total_hours > 0) {
           const enrollResponse = await fetch('/api/enrollments', {
             method: 'POST',
