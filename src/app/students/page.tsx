@@ -63,6 +63,12 @@ const EDUCATION_LEVEL_MAP: Record<string, string> = {
   middle: '中学',
 };
 
+// 格式化日期，只保留年月日
+const formatDate = (dateStr: string | null): string => {
+  if (!dateStr) return '-';
+  return dateStr.split('T')[0];
+};
+
 export default function StudentsPage() {
   const { canDelete, role } = usePermission();
   const [students, setStudents] = useState<Student[]>([]);
@@ -522,7 +528,7 @@ export default function StudentsPage() {
                 <SelectContent>
                   {courses.map((course) => (
                     <SelectItem key={course.id} value={course.id.toString()}>
-                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/有效期:{course.valid_start_date}至{course.valid_end_date})
+                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/有效期:{formatDate(course.valid_start_date)}至{formatDate(course.valid_end_date)})
                     </SelectItem>
                   ))}
                 </SelectContent>
