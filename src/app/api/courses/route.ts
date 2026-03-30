@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, price, education_level, class_name, total_hours, valid_months } = body;
+    const { name, description, price, education_level, class_name, total_hours, valid_start_date, valid_end_date } = body;
     
     const { data, error } = await client
       .from('courses')
@@ -96,7 +96,8 @@ export async function POST(request: NextRequest) {
         education_level: education_level || 'primary',
         class_name: class_name || null,
         total_hours: total_hours || 0,
-        valid_months: valid_months || 1,
+        valid_start_date: valid_start_date || null,
+        valid_end_date: valid_end_date || null,
         status: 'active',
       })
       .select()

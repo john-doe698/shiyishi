@@ -23,7 +23,8 @@ export async function PUT(
     if (body.education_level !== undefined) updateData.education_level = body.education_level;
     if (body.class_name !== undefined) updateData.class_name = body.class_name || null;
     if (body.total_hours !== undefined) updateData.total_hours = body.total_hours;
-    if (body.valid_months !== undefined) updateData.valid_months = body.valid_months;
+    if (body.valid_start_date !== undefined) updateData.valid_start_date = body.valid_start_date || null;
+    if (body.valid_end_date !== undefined) updateData.valid_end_date = body.valid_end_date || null;
     
     const { data, error } = await client
       .from('courses')

@@ -54,7 +54,8 @@ interface Course {
   education_level: string;
   class_name: string | null;
   total_hours: number;
-  valid_months: number;
+  valid_start_date: string | null;
+  valid_end_date: string | null;
 }
 
 const EDUCATION_LEVEL_MAP: Record<string, string> = {
@@ -141,30 +142,18 @@ export default function StudentsPage() {
     }
   };
 
-  // 计算到期日期
-  const calculateExpiryDate = (months: number): string => {
-    const date = new Date();
-    date.setMonth(date.getMonth() + months);
-    return date.toISOString().split('T')[0];
-  };
-
-  // 选择课程时自动计算课时和到期日期
+  // 选择课程时自动填充课时、价格和有效期
   const handleCourseSelect = (courseId: string) => {
     const course = courses.find(c => c.id.toString() === courseId);
     if (!course) return;
     
-    // 使用课程自定义的课时和有效期
-    const hours = course.total_hours;
-    const amount = (Number(course.price) * hours).toFixed(2);
-    const expiryDate = calculateExpiryDate(course.valid_months);
-    const startDate = new Date().toISOString().split('T')[0];
-    
+    // 使用课程的课时、价格和有效期
     setEnrollment({
       course_id: courseId,
-      total_hours: hours,
-      amount,
-      start_date: startDate,
-      expiry_date: expiryDate,
+      total_hours: course.total_hours,
+      amount: course.price, // 直接使用课程价格
+      start_date: course.valid_start_date ? course.valid_start_date.split('T')[0] : new Date().toISOString().split('T')[0],
+      expiry_date: course.valid_end_date ? course.valid_end_date.split('T')[0] : '',
     });
   };
 
@@ -533,7 +522,7 @@ export default function StudentsPage() {
                 <SelectContent>
                   {courses.map((course) => (
                     <SelectItem key={course.id} value={course.id.toString()}>
-                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/{course.valid_months}个月)
+                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''} ({course.total_hours}课时/有效期:{course.valid_start_date}至{course.valid_end_date})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -544,7 +533,7 @@ export default function StudentsPage() {
               <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
                 <p><strong>课时数量：</strong>{enrollment.total_hours} 课时</p>
                 <p><strong>有效期：</strong>{enrollment.start_date} 至 {enrollment.expiry_date}</p>
-                <p><strong>课时价格：</strong>¥{courses.find(c => c.id.toString() === enrollment.course_id)?.price}/课时</p>
+                <p><strong>价格：</strong>¥{courses.find(c => c.id.toString() === enrollment.course_id)?.price}</p>
               </div>
             )}
             

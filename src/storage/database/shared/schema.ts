@@ -36,11 +36,12 @@ export const courses = pgTable(
     id: serial().primaryKey(),
     name: varchar("name", { length: 100 }).notNull(),
     description: text("description"),
-    price: numeric("price", { precision: 10, scale: 2 }).notNull().default('0'), // 单课时价格
+    price: numeric("price", { precision: 10, scale: 2 }).notNull().default('0'), // 课程价格（总价）
     education_level: varchar("education_level", { length: 20 }).notNull().default('primary'), // primary: 小学, middle: 中学
     class_name: varchar("class_name", { length: 50 }), // 班次名称（自定义，如：周中班、周末季卡等）
     total_hours: integer("total_hours").notNull().default(0), // 班次包含的总课时
-    valid_months: integer("valid_months").notNull().default(1), // 有效期（月）
+    valid_start_date: timestamp("valid_start_date", { withTimezone: true }), // 有效期开始日期
+    valid_end_date: timestamp("valid_end_date", { withTimezone: true }), // 有效期结束日期
     status: varchar("status", { length: 20 }).notNull().default('active'), // active: 开课, inactive: 停课
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }),

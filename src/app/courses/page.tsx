@@ -41,7 +41,8 @@ interface Course {
   education_level: string;
   class_name: string | null;
   total_hours: number;
-  valid_months: number;
+  valid_start_date: string | null;
+  valid_end_date: string | null;
   status: string;
   created_at: string;
   student_names?: string[];
@@ -67,7 +68,8 @@ export default function CoursesPage() {
     education_level: 'primary',
     class_name: '',
     total_hours: 22,
-    valid_months: 1,
+    valid_start_date: '',
+    valid_end_date: '',
   });
 
   useEffect(() => {
@@ -105,7 +107,8 @@ export default function CoursesPage() {
           education_level: newCourse.education_level,
           class_name: newCourse.class_name || null,
           total_hours: newCourse.total_hours || 0,
-          valid_months: newCourse.valid_months || 1,
+          valid_start_date: newCourse.valid_start_date || null,
+          valid_end_date: newCourse.valid_end_date || null,
         }),
       });
       
@@ -119,7 +122,8 @@ export default function CoursesPage() {
           education_level: 'primary',
           class_name: '',
           total_hours: 22,
-          valid_months: 1,
+          valid_start_date: '',
+          valid_end_date: '',
         });
         fetchCourses();
       } else if (result.error) {
@@ -170,6 +174,17 @@ export default function CoursesPage() {
     }
   };
 
+  // 格式化日期显示
+  const formatValidDate = (startDate: string | null, endDate: string | null) => {
+    if (!startDate && !endDate) return '-';
+    const start = startDate ? new Date(startDate).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+    const end = endDate ? new Date(endDate).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+    if (start && end) return `${start} 至 ${end}`;
+    if (start) return `${start} 起`;
+    if (end) return `至 ${end}`;
+    return '-';
+  };
+
   // 判断是否显示操作列
   const showActions = canEditCourse || canDelete;
 
@@ -192,7 +207,7 @@ export default function CoursesPage() {
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle>添加课程</DialogTitle>
-                <DialogDescription>创建新课程，自定义班次名称和课时</DialogDescription>
+                <DialogDescription>创建新课程，自定义班次名称、课时和有效期</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
@@ -232,7 +247,7 @@ export default function CoursesPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="total_hours">课时数</Label>
                     <Input
@@ -244,17 +259,7 @@ export default function CoursesPage() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="valid_months">有效期（月）</Label>
-                    <Input
-                      id="valid_months"
-                      type="number"
-                      min="1"
-                      value={newCourse.valid_months}
-                      onChange={(e) => setNewCourse({ ...newCourse, valid_months: parseInt(e.target.value) || 1 })}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="price">课时价格（元）</Label>
+                    <Label htmlFor="price">价格（元）</Label>
                     <Input
                       id="price"
                       type="number"
@@ -262,6 +267,27 @@ export default function CoursesPage() {
                       step="0.01"
                       value={newCourse.price}
                       onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="valid_start_date">有效期开始</Label>
+                    <Input
+                      id="valid_start_date"
+                      type="date"
+                      value={newCourse.valid_start_date}
+                      onChange={(e) => setNewCourse({ ...newCourse, valid_start_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="valid_end_date">有效期结束</Label>
+                    <Input
+                      id="valid_end_date"
+                      type="date"
+                      value={newCourse.valid_end_date}
+                      onChange={(e) => setNewCourse({ ...newCourse, valid_end_date: e.target.value })}
                     />
                   </div>
                 </div>
@@ -276,14 +302,13 @@ export default function CoursesPage() {
                   />
                 </div>
                 
-                {/* 预览计算 */}
+                {/* 预览 */}
                 <div className="p-3 bg-muted rounded-lg text-sm">
                   <p className="font-medium mb-2">报名时将自动填充：</p>
                   <div className="grid grid-cols-2 gap-2 text-muted-foreground">
                     <p>课时：{newCourse.total_hours} 课时</p>
-                    <p>有效期：{newCourse.valid_months} 个月</p>
-                    <p>金额：¥{(Number(newCourse.price) * newCourse.total_hours).toFixed(2)}</p>
-                    <p>班次：{newCourse.class_name || '未设置'}</p>
+                    <p>价格：¥{newCourse.price}</p>
+                    <p className="col-span-2">有效期：{formatValidDate(newCourse.valid_start_date, newCourse.valid_end_date)}</p>
                   </div>
                 </div>
               </div>
@@ -318,8 +343,8 @@ export default function CoursesPage() {
                   <TableHead className="text-center">学段</TableHead>
                   <TableHead className="text-center">班次名称</TableHead>
                   <TableHead className="text-center">课时</TableHead>
-                  <TableHead className="text-center">有效期</TableHead>
-                  <TableHead className="text-center">课时价格</TableHead>
+                  <TableHead className="text-center">价格</TableHead>
+                  <TableHead>有效期</TableHead>
                   <TableHead className="text-center">在读学生</TableHead>
                   <TableHead className="text-center">状态</TableHead>
                   {showActions && <TableHead className="text-right">操作</TableHead>}
@@ -340,8 +365,10 @@ export default function CoursesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">{course.total_hours}</TableCell>
-                    <TableCell className="text-center">{course.valid_months} 个月</TableCell>
                     <TableCell className="text-center">¥{course.price}</TableCell>
+                    <TableCell className="text-sm">
+                      {formatValidDate(course.valid_start_date, course.valid_end_date)}
+                    </TableCell>
                     <TableCell className="text-center">
                       <div className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-1">
