@@ -79,12 +79,6 @@ export function LoginPage() {
               )}
             </Button>
           </form>
-          
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground text-center">
-              默认管理员账号：admin / admin123
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
