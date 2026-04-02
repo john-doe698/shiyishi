@@ -39,7 +39,7 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">教育管理系统</CardTitle>
+          <CardTitle className="text-2xl">教学管理系统</CardTitle>
           <CardDescription>请输入账号密码登录</CardDescription>
         </CardHeader>
         <CardContent>

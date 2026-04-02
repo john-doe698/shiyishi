@@ -116,7 +116,7 @@ export function Sidebar() {
       >
         <div className="flex h-16 items-center justify-between border-b px-4">
           {!collapsed && (
-            <h1 className="text-lg font-semibold text-primary">教育管理系统</h1>
+            <h1 className="text-lg font-semibold text-primary">教学管理系统</h1>
           )}
           <Button
             variant="ghost"

@@ -7,7 +7,7 @@ import { ClientLayout } from "@/components/layout/client-layout";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "教育管理系统",
+  title: "教学管理系统",
   description: "学生报名、签到、消课管理系统",
 };
 
