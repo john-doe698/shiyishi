@@ -102,14 +102,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
       
-      // 获取课程价格计算消费金额
-      const { data: course } = await client
-        .from('courses')
-        .select('price')
-        .eq('id', course_id)
+      // 从报名记录获取价格信息计算消费金额
+      // 消费金额 = 报名金额 ÷ 购买总课时 × 消耗课时数
+      const { data: enrollment } = await client
+        .from('enrollments')
+        .select('amount, total_hours')
+        .eq('student_id', student_id)
+        .eq('course_id', course_id)
+        .eq('status', 'active')
         .single();
       
-      const amount = course ? (Number(course.price) * consumeHours).toFixed(2) : '0';
+      let amount = '0';
+      if (enrollment && Number(enrollment.total_hours) > 0) {
+        const unitPrice = Number(enrollment.amount) / Number(enrollment.total_hours);
+        amount = (unitPrice * consumeHours).toFixed(2);
+      }
       
       // 创建消课记录
       await client
