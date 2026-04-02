@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseClient } from '@/storage/database/supabase-client';
+
+const supabase = getSupabaseClient();
+
+// 简单的密码加密函数
+function simpleHash(password: string): string {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16).padStart(16, '0');
+}
+
+// 初始化默认管理员账号
+async function initDefaultAdmin() {
+  const { data: existingAdmin } = await supabase
+    .from('users')
+    .select('id')
+    .eq('username', 'admin')
+    .single();
+
+  if (!existingAdmin) {
+    await supabase
+      .from('users')
+      .insert({
+        username: 'admin',
+        password: simpleHash('admin123'),
+        name: '系统管理员',
+        role: 'admin',
+        status: 'active',
+      });
+  }
+}
+
+// 登录验证
+export async function POST(request: NextRequest) {
+  try {
+    // 确保默认管理员存在
+    await initDefaultAdmin();
+
+    const body = await request.json();
+    const { username, password } = body;
+
+    if (!username || !password) {
+      return NextResponse.json({ error: '用户名和密码不能为空' }, { status: 400 });
+    }
+
+    const hashedPassword = simpleHash(password);
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, username, name, role, status')
+      .eq('username', username)
+      .eq('password', hashedPassword)
+      .single();
+
+    if (error || !user) {
+      return NextResponse.json({ error: '用户名或密码错误' }, { status: 401 });
+    }
+
+    if (user.status !== 'active') {
+      return NextResponse.json({ error: '账号已被禁用' }, { status: 403 });
+    }
+
+    // 返回用户信息（不包含密码）
+    return NextResponse.json({
+      data: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error('登录失败:', error);
+    return NextResponse.json({ error: '登录失败' }, { status: 500 });
+  }
+}

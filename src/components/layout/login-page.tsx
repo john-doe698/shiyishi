@@ -5,26 +5,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePermission, ADMIN_CREDENTIALS } from '@/hooks/use-permission';
-import { Shield, User } from 'lucide-react';
+import { usePermission } from '@/hooks/use-permission';
+import { Shield, User, Loader2 } from 'lucide-react';
 
 export function LoginPage() {
   const { login } = usePermission();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(username, password)) {
-      // 登录成功
-    } else {
-      setError('账号或密码错误');
+    
+    if (!username.trim() || !password.trim()) {
+      setError('请输入账号和密码');
+      return;
     }
-  };
 
-  const handlePlannerLogin = () => {
-    login('', ''); // 规划师无需密码
+    setLoading(true);
+    setError('');
+
+    const result = await login(username, password);
+    
+    setLoading(false);
+    
+    if (!result.success) {
+      setError(result.error || '登录失败');
+    }
   };
 
   return (
@@ -32,62 +40,49 @@ export function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">教育管理系统</CardTitle>
-          <CardDescription>请选择登录方式</CardDescription>
+          <CardDescription>请输入账号密码登录</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* 管理员登录 */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-lg font-medium">
-              <Shield className="h-5 w-5 text-primary" />
-              <span>管理员登录</span>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="username">账号</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="请输入账号"
+                disabled={loading}
+              />
             </div>
-            <form onSubmit={handleAdminLogin} className="space-y-3">
-              <div className="grid gap-2">
-                <Label htmlFor="username">账号</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="请输入管理员账号"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">密码</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="请输入密码"
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full">
-                管理员登录
-              </Button>
-            </form>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+            <div className="grid gap-2">
+              <Label htmlFor="password">密码</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="请输入密码"
+                disabled={loading}
+              />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">或者</span>
-            </div>
-          </div>
-
-          {/* 规划师登录 */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-lg font-medium">
-              <User className="h-5 w-5 text-muted-foreground" />
-              <span>规划师登录</span>
-            </div>
-            <Button variant="outline" className="w-full" onClick={handlePlannerLogin}>
-              规划师快速登录
+            {error && (
+              <p className="text-sm text-red-500 text-center">{error}</p>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  登录中...
+                </>
+              ) : (
+                '登录'
+              )}
             </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              规划师无需密码，可直接登录使用系统
+          </form>
+          
+          <div className="mt-6 p-4 bg-muted rounded-lg">
+            <p className="text-sm text-muted-foreground text-center">
+              默认管理员账号：admin / admin123
             </p>
           </div>
         </CardContent>

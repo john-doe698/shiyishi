@@ -68,7 +68,7 @@ const formatDate = (dateStr: string | null): string => {
 };
 
 export default function StudentsPage() {
-  const { canDelete, role } = usePermission();
+  const { canDelete, role, userInfo } = usePermission();
   const [students, setStudents] = useState<Student[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +127,12 @@ export default function StudentsPage() {
         url += `&search=${encodeURIComponent(search)}`;
       }
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
+      });
       const result = await response.json();
       if (result.data) {
         setStudents(result.data);
@@ -217,7 +222,11 @@ export default function StudentsPage() {
       // 1. 添加学生（课时由报名记录管理，初始为0）
       const response = await fetch('/api/students', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
         body: JSON.stringify({
           name: newStudent.name,
           phone: newStudent.phone,

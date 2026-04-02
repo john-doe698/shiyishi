@@ -14,78 +14,115 @@ export const USER_ROLES: Record<UserRole, UserRoleInfo> = {
   admin: {
     role: 'admin',
     label: '管理员',
-    description: '拥有所有权限，包括删除学生、修改课程等',
+    description: '拥有所有权限，包括删除学生、修改课程、管理规划师等',
   },
   planner: {
     role: 'planner',
     label: '规划师',
-    description: '只能录入学生信息、签到、报名，无法删除',
+    description: '只能管理自己的学生、签到、报名，无法删除',
   },
 };
 
-// 默认管理员账号（实际项目中应该存储在数据库）
-export const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin123',
-};
+interface UserInfo {
+  id: number;
+  username: string;
+  name: string;
+  role: UserRole;
+}
 
 interface PermissionContextType {
   role: UserRole;
   roleInfo: UserRoleInfo;
+  userInfo: UserInfo | null;
   isLoggedIn: boolean;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  setRole: (role: UserRole) => void;
   canDelete: boolean;
   canEditCourse: boolean;
-  canViewAll: boolean;
+  canManageUsers: boolean;
+  refreshUserInfo: () => Promise<void>;
 }
 
 const PermissionContext = createContext<PermissionContextType | undefined>(undefined);
 
 export function PermissionProvider({ children }: { children: ReactNode }) {
   const [role, setRoleState] = useState<UserRole>('planner');
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     // 从 sessionStorage 读取登录状态（关闭浏览器后自动清除）
     const savedLogin = sessionStorage.getItem('is_logged_in');
-    const savedRole = sessionStorage.getItem('user_role') as UserRole;
+    const savedUserInfo = sessionStorage.getItem('user_info');
     
-    if (savedLogin === 'true') {
-      setIsLoggedIn(true);
-      if (savedRole && (savedRole === 'admin' || savedRole === 'planner')) {
-        setRoleState(savedRole);
+    if (savedLogin === 'true' && savedUserInfo) {
+      try {
+        const info = JSON.parse(savedUserInfo);
+        setIsLoggedIn(true);
+        setUserInfo(info);
+        setRoleState(info.role);
+      } catch {
+        // 解析失败，清除状态
+        sessionStorage.removeItem('is_logged_in');
+        sessionStorage.removeItem('user_info');
       }
     }
   }, []);
 
-  const login = (username: string, password: string): boolean => {
-    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-      setIsLoggedIn(true);
-      setRoleState('admin');
-      sessionStorage.setItem('is_logged_in', 'true');
-      sessionStorage.setItem('user_role', 'admin');
-      return true;
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const result = await response.json();
+
+      if (result.data) {
+        setIsLoggedIn(true);
+        setUserInfo(result.data);
+        setRoleState(result.data.role);
+        sessionStorage.setItem('is_logged_in', 'true');
+        sessionStorage.setItem('user_info', JSON.stringify(result.data));
+        return { success: true };
+      } else {
+        return { success: false, error: result.error || '登录失败' };
+      }
+    } catch (error) {
+      console.error('登录失败:', error);
+      return { success: false, error: '登录失败，请稍后重试' };
     }
-    // 规划师直接登录（无需密码）
-    setIsLoggedIn(true);
-    setRoleState('planner');
-    sessionStorage.setItem('is_logged_in', 'true');
-    sessionStorage.setItem('user_role', 'planner');
-    return true;
   };
 
   const logout = () => {
     setIsLoggedIn(false);
+    setUserInfo(null);
     setRoleState('planner');
     sessionStorage.removeItem('is_logged_in');
-    sessionStorage.removeItem('user_role');
+    sessionStorage.removeItem('user_info');
   };
 
-  const setRole = (newRole: UserRole) => {
-    setRoleState(newRole);
-    sessionStorage.setItem('user_role', newRole);
+  const refreshUserInfo = async () => {
+    if (!userInfo) return;
+    
+    try {
+      const response = await fetch(`/api/users/${userInfo.id}`, {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userInfo.id.toString(),
+        },
+      });
+
+      const result = await response.json();
+      if (result.data) {
+        setUserInfo(result.data);
+        setRoleState(result.data.role);
+        sessionStorage.setItem('user_info', JSON.stringify(result.data));
+      }
+    } catch (error) {
+      console.error('刷新用户信息失败:', error);
+    }
   };
 
   const roleInfo = USER_ROLES[role];
@@ -93,19 +130,20 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
   // 权限判断
   const canDelete = role === 'admin';
   const canEditCourse = role === 'admin';
-  const canViewAll = true; // 所有角色都可以查看
+  const canManageUsers = role === 'admin';
 
   return (
     <PermissionContext.Provider value={{
       role,
       roleInfo,
+      userInfo,
       isLoggedIn,
       login,
       logout,
-      setRole,
       canDelete,
       canEditCourse,
-      canViewAll,
+      canManageUsers,
+      refreshUserInfo,
     }}>
       {children}
     </PermissionContext.Provider>

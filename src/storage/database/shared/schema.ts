@@ -1,11 +1,30 @@
 import { sql } from "drizzle-orm";
-import { pgTable, serial, varchar, timestamp, integer, numeric, text, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, timestamp, integer, numeric, text, index, boolean } from "drizzle-orm/pg-core";
 
 // 系统健康检查表（禁止删除）
 export const healthCheck = pgTable("health_check", {
 	id: serial().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 });
+
+// 用户表
+export const users = pgTable(
+	"users",
+	{
+		id: serial().primaryKey(),
+		username: varchar("username", { length: 50 }).notNull().unique(),
+		password: varchar("password", { length: 255 }).notNull(), // 存储加密后的密码
+		name: varchar("name", { length: 100 }).notNull(), // 显示名称
+		role: varchar("role", { length: 20 }).notNull().default('planner'), // admin: 管理员, planner: 规划师
+		status: varchar("status", { length: 20 }).notNull().default('active'), // active: 启用, inactive: 禁用
+		created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updated_at: timestamp("updated_at", { withTimezone: true }),
+	},
+	(table) => [
+		index("users_username_idx").on(table.username),
+		index("users_role_idx").on(table.role),
+	]
+);
 
 // 学生表
 export const students = pgTable(
@@ -19,6 +38,7 @@ export const students = pgTable(
     status: varchar("status", { length: 20 }).notNull().default('active'), // active: 在读, finished: 已结课
     total_hours: integer("total_hours").notNull().default(0), // 总课时
     remaining_hours: integer("remaining_hours").notNull().default(0), // 剩余课时
+    planner_id: integer("planner_id").references(() => users.id, { onDelete: "set null" }), // 关联规划师
     remark: text("remark"),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }),
@@ -26,6 +46,7 @@ export const students = pgTable(
   (table) => [
     index("students_status_idx").on(table.status),
     index("students_name_idx").on(table.name),
+    index("students_planner_id_idx").on(table.planner_id),
   ]
 );
 

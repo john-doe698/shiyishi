@@ -13,7 +13,9 @@
 5. **续费提醒**：即将到期提醒、已过期提醒、课时不足提醒（阈值：≤6课时）
 6. **有效期管理**：支持设置有效期日期范围（开始日期至到期日期）
 7. **续费功能**：学生可对课程进行续费，自动计算课时和有效期
-8. **权限管理**：支持管理员和工作人员两种角色，工作人员无删除权限
+8. **权限管理**：支持管理员和规划师两种角色，规划师无删除权限
+9. **用户管理**：管理员可创建/编辑/删除用户账号，管理规划师信息（仅管理员）
+10. **修改密码**：所有用户可修改自己的登录密码
 
 ### 版本技术栈
 
@@ -33,16 +35,19 @@
 ├── src/
 │   ├── app/                # 页面路由与布局
 │   │   ├── api/            # API 接口
+│   │   │   ├── auth/       # 认证接口（登录、修改密码）
 │   │   │   ├── check-ins/  # 签到接口
 │   │   │   ├── consumptions/ # 消课记录接口
 │   │   │   ├── courses/    # 课程接口
 │   │   │   ├── enrollments/ # 报名接口
 │   │   │   ├── stats/      # 统计数据接口
-│   │   │   └── students/   # 学生接口
+│   │   │   ├── students/   # 学生接口
+│   │   │   └── users/      # 用户管理接口
 │   │   ├── check-in/       # 签到页面
 │   │   ├── consumptions/   # 消课记录页面
 │   │   ├── courses/        # 课程管理页面
-│   │   └── students/       # 学生管理页面
+│   │   ├── students/       # 学生管理页面
+│   │   └── users/          # 用户管理页面（仅管理员）
 │   ├── components/
 │   │   ├── layout/         # 布局组件
 │   │   └── ui/             # Shadcn UI 组件库
@@ -62,7 +67,8 @@
 
 | 表名 | 说明 | 主要字段 |
 |------|------|---------|
-| students | 学生表 | id, name, phone, parent_name, parent_phone, status, total_hours, remaining_hours |
+| users | 用户表 | id, username, password, name, role, status |
+| students | 学生表 | id, name, phone, parent_name, parent_phone, status, total_hours, remaining_hours, planner_id |
 | courses | 课程表 | id, name, description, price, education_level, class_name, total_hours, valid_months, status |
 | enrollments | 报名记录表 | id, student_id, course_id, total_hours, remaining_hours, amount, start_date, expiry_date, status |
 | check_ins | 签到记录表 | id, student_id, course_id, check_in_time, hours, status |
@@ -70,22 +76,30 @@
 
 ## 权限管理
 
-系统支持两种用户角色，登录页面选择登录方式：
+系统支持两种用户角色，所有用户必须使用账号密码登录：
 
-| 角色 | 登录方式 | 权限说明 |
+| 角色 | 默认账号 | 权限说明 |
 |------|---------|---------|
-| 管理员 (admin) | 账号密码登录（默认：admin / admin123） | 拥有所有权限：添加/编辑/删除学生、添加/编辑/删除课程、签到、报名等 |
-| 规划师 (planner) | 快速登录（无需密码） | 只能录入学生信息、签到、报名、续费，**无删除权限** |
+| 管理员 (admin) | admin / admin123 | 拥有所有权限：添加/编辑/删除学生、添加/编辑/删除课程、管理用户、签到、报名等 |
+| 规划师 (planner) | planner1 / 123456, planner2 / 123456 | 只能管理自己的学生、签到、报名、续费，**无删除权限** |
 
 **权限控制说明**：
-- 规划师登录后，操作栏自动隐藏，不显示"无操作权限"提示
+- 所有用户必须使用账号密码登录，登录状态使用 sessionStorage 存储
+- 关闭浏览器后需重新登录，刷新页面保持登录状态
+- 规划师只能看到和管理自己创建的学生
+- 规划师登录后，删除操作栏自动隐藏
 - 规划师无法添加/编辑/删除课程
+- 规划师无法访问用户管理页面
 - 学生结课时自动清除该学生的续费提醒
 
 ## API 接口清单
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
+| /api/auth/login | POST | 用户登录验证 |
+| /api/auth/password | PUT | 修改密码 |
+| /api/users | GET, POST | 获取用户列表/创建用户（仅管理员） |
+| /api/users/[id] | GET, PUT, DELETE | 用户详情/更新/删除 |
 | /api/students | GET, POST | 获取学生列表/创建学生 |
 | /api/students/[id] | GET, PUT, DELETE | 学生详情/更新/删除（删除需管理员权限） |
 | /api/courses | GET, POST | 获取课程列表/创建课程（创建需管理员权限） |

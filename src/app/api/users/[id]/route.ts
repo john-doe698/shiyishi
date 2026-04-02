@@ -1,0 +1,150 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseClient } from '@/storage/database/supabase-client';
+
+const supabase = getSupabaseClient();
+
+// 简单的密码加密函数
+function simpleHash(password: string): string {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16).padStart(16, '0');
+}
+
+// 获取用户详情
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const role = request.headers.get('x-user-role');
+    const currentUserId = request.headers.get('x-user-id');
+    
+    // 只有管理员可以查看其他用户，或者用户可以查看自己
+    if (role !== 'admin' && currentUserId !== id) {
+      return NextResponse.json({ error: '权限不足' }, { status: 403 });
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, name, role, status, created_at, updated_at')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error('获取用户详情失败:', error);
+    return NextResponse.json({ error: '获取用户详情失败' }, { status: 500 });
+  }
+}
+
+// 更新用户
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const role = request.headers.get('x-user-role');
+    const currentUserId = request.headers.get('x-user-id');
+    const body = await request.json();
+    const { name, password, status, role: newRole } = body;
+
+    // 构建更新对象
+    const updateData: Record<string, string | undefined> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    // 所有用户都可以修改自己的名字和密码
+    if (name) {
+      updateData.name = name;
+    }
+    
+    if (password) {
+      updateData.password = simpleHash(password);
+    }
+
+    // 只有管理员可以修改状态和角色
+    if (role === 'admin') {
+      if (status) {
+        updateData.status = status;
+      }
+      if (newRole) {
+        updateData.role = newRole;
+      }
+    } else if (currentUserId !== id) {
+      return NextResponse.json({ error: '权限不足：只能修改自己的信息' }, { status: 403 });
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', id)
+      .select('id, username, name, role, status, created_at, updated_at')
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error('更新用户失败:', error);
+    return NextResponse.json({ error: '更新用户失败' }, { status: 500 });
+  }
+}
+
+// 删除用户（仅管理员）
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const role = request.headers.get('x-user-role');
+    
+    if (role !== 'admin') {
+      return NextResponse.json({ error: '权限不足：只有管理员可以删除用户' }, { status: 403 });
+    }
+
+    // 检查是否是最后一个管理员
+    const { data: user } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', id)
+      .single();
+
+    if (user?.role === 'admin') {
+      const { count } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'admin');
+
+      if (count && count <= 1) {
+        return NextResponse.json({ error: '不能删除最后一个管理员账号' }, { status: 400 });
+      }
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('删除用户失败:', error);
+    return NextResponse.json({ error: '删除用户失败' }, { status: 500 });
+  }
+}
