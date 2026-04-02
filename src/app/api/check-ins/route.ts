@@ -55,22 +55,31 @@ export async function POST(request: NextRequest) {
     
     const consumeHours = hours || 1;
     
-    // 1. 检查学生剩余课时
-    const { data: student, error: studentError } = await client
-      .from('students')
-      .select('remaining_hours')
-      .eq('id', student_id)
-      .single();
+    // 1. 检查学生是否有该课程的有效报名记录
+    const { data: enrollment, error: enrollmentError } = await client
+      .from('enrollments')
+      .select('id, remaining_hours, total_hours, amount')
+      .eq('student_id', student_id)
+      .eq('course_id', course_id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     
-    if (studentError) {
-      return NextResponse.json({ error: studentError.message }, { status: 500 });
+    if (enrollmentError) {
+      return NextResponse.json({ error: enrollmentError.message }, { status: 500 });
     }
     
-    if ((student.remaining_hours || 0) < consumeHours) {
-      return NextResponse.json({ error: '剩余课时不足' }, { status: 400 });
+    if (!enrollment) {
+      return NextResponse.json({ error: '该学生未报名此课程，请先报名或选择正确的课程' }, { status: 400 });
     }
     
-    // 2. 创建签到记录
+    // 2. 检查报名记录的剩余课时
+    if ((enrollment.remaining_hours || 0) < consumeHours) {
+      return NextResponse.json({ error: '该课程剩余课时不足' }, { status: 400 });
+    }
+    
+    // 3. 创建签到记录
     const { data: checkIn, error: checkInError } = await client
       .from('check_ins')
       .insert({
@@ -87,36 +96,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: checkInError.message }, { status: 500 });
     }
     
-    // 3. 如果是正常签到，扣除课时并创建消课记录
+    // 4. 如果是正常签到，扣除课时并创建消课记录
     if (status !== 'leave' && status !== 'absent') {
-      // 扣除学生课时
-      const { error: updateError } = await client
-        .from('students')
+      // 扣除报名记录的课时
+      const { error: updateEnrollmentError } = await client
+        .from('enrollments')
         .update({
-          remaining_hours: student.remaining_hours - consumeHours,
+          remaining_hours: enrollment.remaining_hours - consumeHours,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', student_id);
+        .eq('id', enrollment.id);
       
-      if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 });
+      if (updateEnrollmentError) {
+        return NextResponse.json({ error: updateEnrollmentError.message }, { status: 500 });
       }
       
-      // 从报名记录获取价格信息计算消费金额
-      // 消费金额 = 报名金额 ÷ 购买总课时 × 消耗课时数
-      // 取最新的 active 报名记录来计算单价
-      const { data: enrollments } = await client
-        .from('enrollments')
-        .select('amount, total_hours')
-        .eq('student_id', student_id)
-        .eq('course_id', course_id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      // 扣除学生的总剩余课时
+      const { data: student } = await client
+        .from('students')
+        .select('remaining_hours')
+        .eq('id', student_id)
+        .single();
       
+      if (student) {
+        await client
+          .from('students')
+          .update({
+            remaining_hours: Math.max(0, (student.remaining_hours || 0) - consumeHours),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', student_id);
+      }
+      
+      // 计算消费金额：报名金额 ÷ 总课时 × 消耗课时数
       let amount = '0';
-      if (enrollments && enrollments.length > 0 && Number(enrollments[0].total_hours) > 0) {
-        const unitPrice = Number(enrollments[0].amount) / Number(enrollments[0].total_hours);
+      if (Number(enrollment.total_hours) > 0) {
+        const unitPrice = Number(enrollment.amount) / Number(enrollment.total_hours);
         amount = (unitPrice * consumeHours).toFixed(2);
       }
       

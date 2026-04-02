@@ -46,6 +46,19 @@ interface Course {
   price: string;
 }
 
+interface EnrolledCourse {
+  id: number;
+  remaining_hours: number;
+  total_hours: number;
+  amount: string;
+  expiry_date: string | null;
+  courses: {
+    id: number;
+    name: string;
+    price: string;
+  } | null;
+}
+
 interface CheckIn {
   id: number;
   student_id: number;
@@ -88,6 +101,7 @@ interface Consumption {
 export default function CheckInPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,6 +157,36 @@ export default function CheckInPage() {
     } catch (error) {
       console.error('获取课程列表失败:', error);
     }
+  };
+
+  // 获取学生已报名的课程
+  const fetchEnrolledCourses = async (studentId: string) => {
+    if (!studentId) {
+      setEnrolledCourses([]);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/students/enrolled-courses?student_id=${studentId}`);
+      const result = await response.json();
+      if (result.data) {
+        setEnrolledCourses(result.data);
+      } else {
+        setEnrolledCourses([]);
+      }
+    } catch (error) {
+      console.error('获取已报名课程失败:', error);
+      setEnrolledCourses([]);
+    }
+  };
+
+  // 选择学生时获取已报名课程
+  const handleStudentSelect = async (studentId: string) => {
+    setNewCheckIn({
+      ...newCheckIn,
+      student_id: studentId,
+      course_id: '', // 清空课程选择
+    });
+    await fetchEnrolledCourses(studentId);
   };
 
   const fetchData = async () => {
@@ -220,6 +264,7 @@ export default function CheckInPage() {
           status: 'checked_in',
           remark: '',
         });
+        setEnrolledCourses([]);
         fetchData();
         fetchStudents();
       } else if (result.error) {
@@ -287,7 +332,7 @@ export default function CheckInPage() {
                 <Label>选择学生 *</Label>
                 <Select
                   value={newCheckIn.student_id}
-                  onValueChange={(value) => setNewCheckIn({ ...newCheckIn, student_id: value })}
+                  onValueChange={handleStudentSelect}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="请选择学生" />
@@ -306,16 +351,21 @@ export default function CheckInPage() {
                 <Select
                   value={newCheckIn.course_id}
                   onValueChange={(value) => setNewCheckIn({ ...newCheckIn, course_id: value })}
+                  disabled={!newCheckIn.student_id}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="请选择课程" />
+                    <SelectValue placeholder={newCheckIn.student_id ? "请选择课程" : "请先选择学生"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.map((course) => (
-                      <SelectItem key={course.id} value={course.id.toString()}>
-                        {course.name}
-                      </SelectItem>
-                    ))}
+                    {enrolledCourses.length > 0 ? (
+                      enrolledCourses.map((enrollment) => (
+                        <SelectItem key={enrollment.courses?.id} value={enrollment.courses?.id.toString() || ''}>
+                          {enrollment.courses?.name} (剩余: {enrollment.remaining_hours}课时)
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>该学生暂无已报名的课程</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
