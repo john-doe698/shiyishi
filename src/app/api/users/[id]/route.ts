@@ -75,36 +75,51 @@ export async function PUT(
       updated_at: new Date().toISOString(),
     };
 
-    // 所有用户都可以修改自己的名字和密码
+    // 权限检查
+    const isSelf = currentUserId === id;
+    const isAdmin = role === 'admin';
+    const isManager = role === 'manager';
+    const targetIsPlanner = targetUser?.role === 'planner';
+
+    // 修改名字：用户自己可以改，admin可以改任何人，manager只能改planner
     if (name) {
-      updateData.name = name;
-    }
-    
-    if (password) {
-      updateData.password = simpleHash(password);
+      if (isSelf || isAdmin || (isManager && targetIsPlanner)) {
+        updateData.name = name;
+      } else {
+        return NextResponse.json({ error: '权限不足' }, { status: 403 });
+      }
     }
 
-    // admin可以修改所有用户的状态和角色
-    if (role === 'admin') {
-      if (status) {
-        updateData.status = status;
+    // 修改密码：用户自己可以改（通过密码修改功能），admin可以重置任何人，manager只能重置planner
+    if (password) {
+      if (isSelf || isAdmin || (isManager && targetIsPlanner)) {
+        updateData.password = simpleHash(password);
+      } else {
+        return NextResponse.json({ error: '权限不足：无法修改此用户的密码' }, { status: 403 });
       }
-      if (newRole) {
+    }
+
+    // 修改状态：admin可以改任何人，manager只能改planner
+    if (status) {
+      if (isAdmin || (isManager && targetIsPlanner)) {
+        updateData.status = status;
+      } else {
+        return NextResponse.json({ error: '权限不足' }, { status: 403 });
+      }
+    }
+
+    // 修改角色：只有admin可以修改
+    if (newRole) {
+      if (isAdmin) {
         updateData.role = newRole;
+      } else {
+        return NextResponse.json({ error: '权限不足：只有超级管理员可以修改角色' }, { status: 403 });
       }
     }
-    // manager只能修改planner的状态（不能修改角色）
-    else if (role === 'manager' && targetUser?.role === 'planner') {
-      if (status) {
-        updateData.status = status;
-      }
-    }
-    // 用户可以修改自己的信息
-    else if (currentUserId === id) {
-      // 只能修改name和password，已在上面处理
-    }
-    else {
-      return NextResponse.json({ error: '权限不足' }, { status: 403 });
+
+    // 如果没有任何更新，返回错误
+    if (Object.keys(updateData).length <= 1) {
+      return NextResponse.json({ error: '没有可更新的内容' }, { status: 400 });
     }
 
     const { data, error } = await supabase

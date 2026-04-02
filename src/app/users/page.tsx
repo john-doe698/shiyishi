@@ -377,22 +377,28 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(user)}
-                          title="编辑"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openResetPasswordDialog(user)}
-                          title="重置密码"
-                        >
-                          <Key className="h-4 w-4" />
-                        </Button>
+                        {/* admin可以编辑所有人，manager只能编辑planner */}
+                        {(currentRole === 'admin' || (currentRole === 'manager' && user.role === 'planner')) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(user)}
+                            title="编辑"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {/* admin可以重置所有人密码，manager只能重置planner密码 */}
+                        {(currentRole === 'admin' || (currentRole === 'manager' && user.role === 'planner')) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openResetPasswordDialog(user)}
+                            title="重置密码"
+                          >
+                            <Key className="h-4 w-4" />
+                          </Button>
+                        )}
                         {canDelete && (
                           <Button
                             variant="ghost"
