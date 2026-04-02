@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
     .select(`
       id,
       remaining_hours,
+      remaining_purchased,
+      remaining_gifted,
       total_hours,
+      gifted_hours,
       amount,
       expiry_date,
       courses (

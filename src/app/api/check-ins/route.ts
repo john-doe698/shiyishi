@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     // 1. 检查学生是否有该课程的有效报名记录
     const { data: enrollment, error: enrollmentError } = await client
       .from('enrollments')
-      .select('id, remaining_hours, total_hours, amount')
+      .select('id, remaining_hours, remaining_purchased, remaining_gifted, total_hours, gifted_hours, amount')
       .eq('student_id', student_id)
       .eq('course_id', course_id)
       .eq('status', 'active')
@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
     }
     
     // 2. 检查报名记录的剩余课时
-    if ((enrollment.remaining_hours || 0) < consumeHours) {
+    const totalRemaining = (enrollment.remaining_purchased || 0) + (enrollment.remaining_gifted || 0);
+    if (totalRemaining < consumeHours) {
       return NextResponse.json({ error: '该课程剩余课时不足' }, { status: 400 });
     }
     
@@ -98,11 +99,30 @@ export async function POST(request: NextRequest) {
     
     // 4. 如果是正常签到，扣除课时并创建消课记录
     if (status !== 'leave' && status !== 'absent') {
-      // 扣除报名记录的课时
+      // 计算消耗的购买课时和赠送课时
+      // 规则：先消耗购买课时，再消耗赠送课时
+      let consumePurchased = 0;
+      let consumeGifted = 0;
+      const currentPurchased = enrollment.remaining_purchased || 0;
+      const currentGifted = enrollment.remaining_gifted || 0;
+      
+      if (consumeHours <= currentPurchased) {
+        // 购买课时足够，全部从购买课时扣
+        consumePurchased = consumeHours;
+        consumeGifted = 0;
+      } else {
+        // 购买课时不足，先扣完购买课时，剩余从赠送课时扣
+        consumePurchased = currentPurchased;
+        consumeGifted = consumeHours - currentPurchased;
+      }
+      
+      // 更新报名记录的剩余课时
       const { error: updateEnrollmentError } = await client
         .from('enrollments')
         .update({
-          remaining_hours: enrollment.remaining_hours - consumeHours,
+          remaining_purchased: currentPurchased - consumePurchased,
+          remaining_gifted: currentGifted - consumeGifted,
+          remaining_hours: totalRemaining - consumeHours,
           updated_at: new Date().toISOString(),
         })
         .eq('id', enrollment.id);
@@ -128,14 +148,19 @@ export async function POST(request: NextRequest) {
           .eq('id', student_id);
       }
       
-      // 计算消费金额：报名金额 ÷ 总课时 × 消耗课时数
+      // 计算消费金额：只有消耗购买课时才产生金额
+      // 单价 = 报名金额 ÷ 购买课时数
       let amount = '0';
-      if (Number(enrollment.total_hours) > 0) {
+      if (consumePurchased > 0 && Number(enrollment.total_hours) > 0) {
         const unitPrice = Number(enrollment.amount) / Number(enrollment.total_hours);
-        amount = (unitPrice * consumeHours).toFixed(2);
+        amount = (unitPrice * consumePurchased).toFixed(2);
       }
       
       // 创建消课记录
+      const remarkText = consumeGifted > 0 
+        ? `签到消课（含赠送课时${consumeGifted}节）` 
+        : '签到自动消课';
+      
       await client
         .from('lesson_consumptions')
         .insert({
@@ -144,7 +169,7 @@ export async function POST(request: NextRequest) {
           check_in_id: checkIn.id,
           hours: consumeHours,
           amount,
-          remark: '签到自动消课',
+          remark: remarkText,
         });
     }
     

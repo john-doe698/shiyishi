@@ -49,7 +49,10 @@ interface Course {
 interface EnrolledCourse {
   id: number;
   remaining_hours: number;
+  remaining_purchased: number;
+  remaining_gifted: number;
   total_hours: number;
+  gifted_hours: number;
   amount: string;
   expiry_date: string | null;
   courses: {
@@ -360,7 +363,9 @@ export default function CheckInPage() {
                     {enrolledCourses.length > 0 ? (
                       enrolledCourses.map((enrollment) => (
                         <SelectItem key={enrollment.courses?.id} value={enrollment.courses?.id.toString() || ''}>
-                          {enrollment.courses?.name} (剩余: {enrollment.remaining_hours}课时)
+                          {enrollment.courses?.name} 
+                          (剩余: {enrollment.remaining_hours}课时
+                          {enrollment.remaining_gifted > 0 && ` [含赠送${enrollment.remaining_gifted}课时]`})
                         </SelectItem>
                       ))
                     ) : (

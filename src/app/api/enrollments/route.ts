@@ -47,17 +47,23 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { student_id, course_id, total_hours, amount, start_date, expiry_date, remark } = body;
+    const { student_id, course_id, total_hours, gifted_hours, amount, start_date, expiry_date, remark } = body;
     
-    // 开始事务处理
+    const purchaseHours = total_hours || 0;
+    const giftHours = gifted_hours || 0;
+    const totalHoursAll = purchaseHours + giftHours;
+    
     // 1. 创建报名记录
     const { data: enrollment, error: enrollmentError } = await client
       .from('enrollments')
       .insert({
         student_id,
         course_id,
-        total_hours: total_hours || 0,
-        remaining_hours: total_hours || 0,
+        total_hours: purchaseHours,           // 购买课时
+        gifted_hours: giftHours,              // 赠送课时
+        remaining_purchased: purchaseHours,   // 剩余购买课时
+        remaining_gifted: giftHours,          // 剩余赠送课时
+        remaining_hours: totalHoursAll,       // 总剩余课时
         amount: amount || '0',
         start_date: start_date || new Date().toISOString(),
         expiry_date: expiry_date || null,
@@ -82,8 +88,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: studentError.message }, { status: 500 });
     }
     
-    const newTotalHours = (student.total_hours || 0) + (total_hours || 0);
-    const newRemainingHours = (student.remaining_hours || 0) + (total_hours || 0);
+    // 学生总课时 = 购买课时 + 赠送课时
+    const newTotalHours = (student.total_hours || 0) + totalHoursAll;
+    const newRemainingHours = (student.remaining_hours || 0) + totalHoursAll;
     
     const { error: updateError } = await client
       .from('students')

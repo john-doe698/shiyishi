@@ -80,8 +80,11 @@ export const enrollments = pgTable(
     id: serial().primaryKey(),
     student_id: integer("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
     course_id: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
-    total_hours: integer("total_hours").notNull().default(0), // 购买总课时
-    remaining_hours: integer("remaining_hours").notNull().default(0), // 剩余课时
+    total_hours: integer("total_hours").notNull().default(0), // 购买总课时（付费）
+    gifted_hours: integer("gifted_hours").notNull().default(0), // 赠送课时（免费）
+    remaining_purchased: integer("remaining_purchased").notNull().default(0), // 剩余购买课时
+    remaining_gifted: integer("remaining_gifted").notNull().default(0), // 剩余赠送课时
+    remaining_hours: integer("remaining_hours").notNull().default(0), // 总剩余课时 = remaining_purchased + remaining_gifted
     amount: numeric("amount", { precision: 10, scale: 2 }).notNull().default('0'), // 报名金额
     start_date: timestamp("start_date", { withTimezone: true }), // 有效期开始日期
     expiry_date: timestamp("expiry_date", { withTimezone: true }), // 到期日期

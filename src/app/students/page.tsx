@@ -86,6 +86,7 @@ export default function StudentsPage() {
     // 课程报名相关字段
     course_id: '',
     course_total_hours: 0,  // 自定义课时数
+    course_gifted_hours: 0,  // 赠送课时
     course_amount: '0',      // 自定义金额
     valid_start_date: '',    // 有效期开始日期
     valid_end_date: '',      // 有效期结束日期
@@ -97,6 +98,7 @@ export default function StudentsPage() {
   const [enrollment, setEnrollment] = useState({
     course_id: '',
     total_hours: 0,
+    gifted_hours: 0,  // 赠送课时
     amount: '0',
     start_date: new Date().toISOString().split('T')[0],
     expiry_date: '',
@@ -165,6 +167,7 @@ export default function StudentsPage() {
     setEnrollment({
       course_id: courseId,
       total_hours: course.total_hours,
+      gifted_hours: 0,
       amount: course.price,
       start_date: new Date().toISOString().split('T')[0],
       expiry_date: '',
@@ -179,6 +182,7 @@ export default function StudentsPage() {
         ...newStudent,
         course_id: '',
         course_total_hours: 0,
+        course_gifted_hours: 0,
         course_amount: '0',
         valid_start_date: '',
         valid_end_date: '',
@@ -194,6 +198,7 @@ export default function StudentsPage() {
       ...newStudent,
       course_id: courseId,
       course_total_hours: course.total_hours,
+      course_gifted_hours: 0,
       course_amount: course.price,
       valid_start_date: new Date().toISOString().split('T')[0],
       valid_end_date: '',
@@ -250,6 +255,7 @@ export default function StudentsPage() {
               student_id: studentId,
               course_id: newStudent.course_id,
               total_hours: newStudent.course_total_hours,
+              gifted_hours: newStudent.course_gifted_hours || 0,
               amount: newStudent.course_amount,
               start_date: newStudent.valid_start_date,
               expiry_date: newStudent.valid_end_date,
@@ -271,6 +277,7 @@ export default function StudentsPage() {
           remark: '',
           course_id: '',
           course_total_hours: 0,
+          course_gifted_hours: 0,
           course_amount: '0',
           valid_start_date: '',
           valid_end_date: '',
@@ -308,7 +315,14 @@ export default function StudentsPage() {
       if (result.data) {
         setEnrollDialogOpen(false);
         setEnrollingStudent(null);
-        setEnrollment({ course_id: '', total_hours: 0, amount: '0', start_date: new Date().toISOString().split('T')[0], expiry_date: '' });
+        setEnrollment({ 
+          course_id: '', 
+          total_hours: 0, 
+          gifted_hours: 0, 
+          amount: '0', 
+          start_date: new Date().toISOString().split('T')[0], 
+          expiry_date: '' 
+        });
         fetchStudents();
       } else if (result.error) {
         alert(result.error);
@@ -530,16 +544,27 @@ export default function StudentsPage() {
                 
                 {newStudent.course_id && (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="course_total_hours">课时数</Label>
+                        <Label htmlFor="course_total_hours">购买课时</Label>
                         <Input
                           id="course_total_hours"
                           type="number"
                           min="1"
                           value={newStudent.course_total_hours}
                           onChange={(e) => setNewStudent({ ...newStudent, course_total_hours: parseInt(e.target.value) || 0 })}
-                          placeholder="输入课时数"
+                          placeholder="购买课时"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="course_gifted_hours">赠送课时</Label>
+                        <Input
+                          id="course_gifted_hours"
+                          type="number"
+                          min="0"
+                          value={newStudent.course_gifted_hours}
+                          onChange={(e) => setNewStudent({ ...newStudent, course_gifted_hours: parseInt(e.target.value) || 0 })}
+                          placeholder="赠送课时"
                         />
                       </div>
                       <div className="grid gap-2">
@@ -551,10 +576,22 @@ export default function StudentsPage() {
                           step="0.01"
                           value={newStudent.course_amount}
                           onChange={(e) => setNewStudent({ ...newStudent, course_amount: e.target.value })}
-                          placeholder="输入金额"
+                          placeholder="报名金额"
                         />
                       </div>
                     </div>
+                    
+                    {/* 显示单价计算 */}
+                    {newStudent.course_total_hours > 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        单价：¥{(Number(newStudent.course_amount) / newStudent.course_total_hours).toFixed(2)}/课时
+                        {newStudent.course_gifted_hours > 0 && (
+                          <span className="ml-2 text-green-600">
+                            （含赠送 {newStudent.course_gifted_hours} 课时）
+                          </span>
+                        )}
+                      </div>
+                    )}
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
@@ -724,15 +761,25 @@ export default function StudentsPage() {
             
             {enrollment.course_id && (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="enroll_total_hours">课时数</Label>
+                    <Label htmlFor="enroll_total_hours">购买课时</Label>
                     <Input
                       id="enroll_total_hours"
                       type="number"
                       min="1"
                       value={enrollment.total_hours}
                       onChange={(e) => setEnrollment({ ...enrollment, total_hours: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="enroll_gifted_hours">赠送课时</Label>
+                    <Input
+                      id="enroll_gifted_hours"
+                      type="number"
+                      min="0"
+                      value={enrollment.gifted_hours}
+                      onChange={(e) => setEnrollment({ ...enrollment, gifted_hours: parseInt(e.target.value) || 0 })}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -747,6 +794,18 @@ export default function StudentsPage() {
                     />
                   </div>
                 </div>
+                
+                {/* 显示单价计算 */}
+                {enrollment.total_hours > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    单价：¥{(Number(enrollment.amount) / enrollment.total_hours).toFixed(2)}/课时
+                    {enrollment.gifted_hours > 0 && (
+                      <span className="ml-2 text-green-600">
+                        （含赠送 {enrollment.gifted_hours} 课时）
+                      </span>
+                    )}
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
