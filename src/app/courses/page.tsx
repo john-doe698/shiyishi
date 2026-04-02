@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -56,6 +57,7 @@ export default function CoursesPage() {
   const { canEditCourse, canDelete } = usePermission();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('primary');
   
   // 添加课程弹窗
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -177,6 +179,22 @@ export default function CoursesPage() {
     return '-';
   };
 
+  // 打开添加弹窗时，自动选择当前标签页的学段
+  const openAddDialog = () => {
+    setNewCourse({
+      name: '',
+      description: '',
+      price: '0',
+      education_level: activeTab,
+      class_name: '',
+      total_hours: 22,
+    });
+    setAddDialogOpen(true);
+  };
+
+  // 过滤当前标签页的课程
+  const filteredCourses = courses.filter(course => course.education_level === activeTab);
+
   // 判断是否显示操作列
   const showActions = canEditCourse || canDelete;
 
@@ -191,15 +209,15 @@ export default function CoursesPage() {
         {canEditCourse && (
           <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={openAddDialog}>
                 <Plus className="mr-2 h-4 w-4" />
-                添加课程
+                添加{activeTab === 'primary' ? '小学' : '中学'}课程
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>添加课程</DialogTitle>
-                <DialogDescription>创建新课程，自定义班次名称、课时和有效期</DialogDescription>
+                <DialogTitle>添加课程 - {EDUCATION_LEVEL_MAP[newCourse.education_level]}</DialogTitle>
+                <DialogDescription>创建新课程，自定义班次名称、课时和价格</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
@@ -284,110 +302,170 @@ export default function CoursesPage() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            课程列表
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">加载中...</div>
-          ) : courses.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">暂无课程数据</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>课程名称</TableHead>
-                  <TableHead className="text-center">学段</TableHead>
-                  <TableHead className="text-center">班次名称</TableHead>
-                  <TableHead className="text-center">课时</TableHead>
-                  <TableHead className="text-center">价格</TableHead>
-                  <TableHead className="text-center">在读学生</TableHead>
-                  <TableHead className="text-center">状态</TableHead>
-                  {showActions && <TableHead className="text-right">操作</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {courses.map((course) => (
-                  <TableRow key={course.id}>
-                    <TableCell className="font-medium">{course.name}</TableCell>
-                    <TableCell className="text-center">
-                      {EDUCATION_LEVEL_MAP[course.education_level as keyof typeof EDUCATION_LEVEL_MAP] || course.education_level}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {course.class_name ? (
-                        <Badge variant="outline">{course.class_name}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">{course.total_hours}</TableCell>
-                    <TableCell className="text-center">¥{course.price}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          <span>{course.student_count || 0}</span>
-                        </div>
-                        {course.student_names && course.student_names.length > 0 && (
-                          <div className="text-xs text-muted-foreground max-w-32 truncate" title={course.student_names.join('、')}>
-                            {course.student_names.slice(0, 3).join('、')}
-                            {course.student_names.length > 3 && ` +${course.student_names.length - 3}`}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
-                        {course.status === 'active' ? '开课中' : '已停课'}
-                      </Badge>
-                    </TableCell>
-                    {showActions && (
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {canEditCourse && (
-                            course.status === 'active' ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleUpdateStatus(course.id, 'inactive')}
-                                title="停课"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleUpdateStatus(course.id, 'active')}
-                                title="恢复开课"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )
-                          )}
-                          {canDelete && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(course.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="primary">小学课程</TabsTrigger>
+          <TabsTrigger value="middle">中学课程</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="primary" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                小学课程列表
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">加载中...</div>
+              ) : filteredCourses.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">暂无小学课程数据</div>
+              ) : (
+                <CourseTable 
+                  courses={filteredCourses} 
+                  showActions={showActions}
+                  canEditCourse={canEditCourse}
+                  canDelete={canDelete}
+                  handleUpdateStatus={handleUpdateStatus}
+                  handleDelete={handleDelete}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="middle" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                中学课程列表
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">加载中...</div>
+              ) : filteredCourses.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">暂无中学课程数据</div>
+              ) : (
+                <CourseTable 
+                  courses={filteredCourses} 
+                  showActions={showActions}
+                  canEditCourse={canEditCourse}
+                  canDelete={canDelete}
+                  handleUpdateStatus={handleUpdateStatus}
+                  handleDelete={handleDelete}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+// 课程表格组件
+function CourseTable({ 
+  courses, 
+  showActions, 
+  canEditCourse, 
+  canDelete,
+  handleUpdateStatus,
+  handleDelete 
+}: { 
+  courses: Course[];
+  showActions: boolean;
+  canEditCourse: boolean;
+  canDelete: boolean;
+  handleUpdateStatus: (id: number, status: string) => void;
+  handleDelete: (id: number) => void;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>课程名称</TableHead>
+          <TableHead className="text-center">班次名称</TableHead>
+          <TableHead className="text-center">课时</TableHead>
+          <TableHead className="text-center">价格</TableHead>
+          <TableHead className="text-center">在读学生</TableHead>
+          <TableHead className="text-center">状态</TableHead>
+          {showActions && <TableHead className="text-right">操作</TableHead>}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {courses.map((course) => (
+          <TableRow key={course.id}>
+            <TableCell className="font-medium">{course.name}</TableCell>
+            <TableCell className="text-center">
+              {course.class_name ? (
+                <Badge variant="outline">{course.class_name}</Badge>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
+            </TableCell>
+            <TableCell className="text-center">{course.total_hours}</TableCell>
+            <TableCell className="text-center">¥{course.price}</TableCell>
+            <TableCell className="text-center">
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span>{course.student_count || 0}</span>
+                </div>
+                {course.student_names && course.student_names.length > 0 && (
+                  <div className="text-xs text-muted-foreground max-w-32 truncate" title={course.student_names.join('、')}>
+                    {course.student_names.slice(0, 3).join('、')}
+                    {course.student_names.length > 3 && ` +${course.student_names.length - 3}`}
+                  </div>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="text-center">
+              <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
+                {course.status === 'active' ? '开课中' : '已停课'}
+              </Badge>
+            </TableCell>
+            {showActions && (
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-2">
+                  {canEditCourse && (
+                    course.status === 'active' ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleUpdateStatus(course.id, 'inactive')}
+                        title="停课"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleUpdateStatus(course.id, 'active')}
+                        title="恢复开课"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(course.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+            )}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

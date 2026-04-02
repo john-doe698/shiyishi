@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type UserRole = 'admin' | 'planner';
 
@@ -47,27 +47,45 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
   const [role, setRoleState] = useState<UserRole>('planner');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // 不再从 localStorage 读取登录状态，每次访问都需要重新登录
+  useEffect(() => {
+    // 从 sessionStorage 读取登录状态（关闭浏览器后自动清除）
+    const savedLogin = sessionStorage.getItem('is_logged_in');
+    const savedRole = sessionStorage.getItem('user_role') as UserRole;
+    
+    if (savedLogin === 'true') {
+      setIsLoggedIn(true);
+      if (savedRole && (savedRole === 'admin' || savedRole === 'planner')) {
+        setRoleState(savedRole);
+      }
+    }
+  }, []);
 
   const login = (username: string, password: string): boolean => {
     if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
       setIsLoggedIn(true);
       setRoleState('admin');
+      sessionStorage.setItem('is_logged_in', 'true');
+      sessionStorage.setItem('user_role', 'admin');
       return true;
     }
     // 规划师直接登录（无需密码）
     setIsLoggedIn(true);
     setRoleState('planner');
+    sessionStorage.setItem('is_logged_in', 'true');
+    sessionStorage.setItem('user_role', 'planner');
     return true;
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     setRoleState('planner');
+    sessionStorage.removeItem('is_logged_in');
+    sessionStorage.removeItem('user_role');
   };
 
   const setRole = (newRole: UserRole) => {
     setRoleState(newRole);
+    sessionStorage.setItem('user_role', newRole);
   };
 
   const roleInfo = USER_ROLES[role];

@@ -496,9 +496,23 @@ export default function StudentsPage() {
                       <SelectValue placeholder="请选择课程班次" />
                     </SelectTrigger>
                     <SelectContent>
-                      {courses.map((course) => (
+                      {/* 小学课程 */}
+                      <SelectItem value="_primary_header" disabled className="font-bold text-primary">
+                        —— 小学课程 ——
+                      </SelectItem>
+                      {courses.filter(c => c.education_level === 'primary').map((course) => (
                         <SelectItem key={course.id} value={course.id.toString()}>
-                          {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''}
+                          {course.name} {course.class_name ? `(${course.class_name})` : ''} - ¥{course.price}
+                        </SelectItem>
+                      ))}
+                      
+                      {/* 中学课程 */}
+                      <SelectItem value="_middle_header" disabled className="font-bold text-primary">
+                        —— 中学课程 ——
+                      </SelectItem>
+                      {courses.filter(c => c.education_level === 'middle').map((course) => (
+                        <SelectItem key={course.id} value={course.id.toString()}>
+                          {course.name} {course.class_name ? `(${course.class_name})` : ''} - ¥{course.price}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -676,9 +690,23 @@ export default function StudentsPage() {
                   <SelectValue placeholder="请选择课程班次" />
                 </SelectTrigger>
                 <SelectContent>
-                  {courses.map((course) => (
+                  {/* 小学课程 */}
+                  <SelectItem value="_primary_header" disabled className="font-bold text-primary">
+                    —— 小学课程 ——
+                  </SelectItem>
+                  {courses.filter(c => c.education_level === 'primary').map((course) => (
                     <SelectItem key={course.id} value={course.id.toString()}>
-                      {course.name} - {EDUCATION_LEVEL_MAP[course.education_level] || ''} {course.class_name ? `(${course.class_name})` : ''}
+                      {course.name} {course.class_name ? `(${course.class_name})` : ''} - ¥{course.price}
+                    </SelectItem>
+                  ))}
+                  
+                  {/* 中学课程 */}
+                  <SelectItem value="_middle_header" disabled className="font-bold text-primary">
+                    —— 中学课程 ——
+                  </SelectItem>
+                  {courses.filter(c => c.education_level === 'middle').map((course) => (
+                    <SelectItem key={course.id} value={course.id.toString()}>
+                      {course.name} {course.class_name ? `(${course.class_name})` : ''} - ¥{course.price}
                     </SelectItem>
                   ))}
                 </SelectContent>
