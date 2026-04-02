@@ -104,17 +104,19 @@ export async function POST(request: NextRequest) {
       
       // 从报名记录获取价格信息计算消费金额
       // 消费金额 = 报名金额 ÷ 购买总课时 × 消耗课时数
-      const { data: enrollment } = await client
+      // 取最新的 active 报名记录来计算单价
+      const { data: enrollments } = await client
         .from('enrollments')
         .select('amount, total_hours')
         .eq('student_id', student_id)
         .eq('course_id', course_id)
         .eq('status', 'active')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1);
       
       let amount = '0';
-      if (enrollment && Number(enrollment.total_hours) > 0) {
-        const unitPrice = Number(enrollment.amount) / Number(enrollment.total_hours);
+      if (enrollments && enrollments.length > 0 && Number(enrollments[0].total_hours) > 0) {
+        const unitPrice = Number(enrollments[0].amount) / Number(enrollments[0].total_hours);
         amount = (unitPrice * consumeHours).toFixed(2);
       }
       
