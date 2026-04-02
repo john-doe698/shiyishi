@@ -361,15 +361,19 @@ export default function CheckInPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {enrolledCourses.length > 0 ? (
-                      enrolledCourses.map((enrollment) => (
-                        <SelectItem key={enrollment.courses?.id} value={enrollment.courses?.id.toString() || ''}>
-                          {enrollment.courses?.name} 
-                          (剩余: {enrollment.remaining_hours}课时
-                          {enrollment.remaining_gifted > 0 && ` [含赠送${enrollment.remaining_gifted}课时]`})
-                        </SelectItem>
-                      ))
+                      enrolledCourses
+                        .filter((enrollment) => enrollment.courses?.id)
+                        .map((enrollment) => (
+                          <SelectItem key={enrollment.courses!.id} value={enrollment.courses!.id.toString()}>
+                            {enrollment.courses!.name} 
+                            (剩余: {enrollment.remaining_hours}课时
+                            {enrollment.remaining_gifted > 0 && ` [含赠送${enrollment.remaining_gifted}课时]`})
+                          </SelectItem>
+                        ))
                     ) : (
-                      <SelectItem value="" disabled>该学生暂无已报名的课程</SelectItem>
+                      <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+                        该学生暂无已报名的课程
+                      </div>
                     )}
                   </SelectContent>
                 </Select>
