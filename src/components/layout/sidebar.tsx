@@ -9,8 +9,6 @@ import {
   Calendar,
   BookOpen,
   Menu,
-  Shield,
-  User,
   LogOut,
   Key,
   UserCog,
@@ -26,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { usePermission, USER_ROLES } from '@/hooks/use-permission';
+import { usePermission } from '@/hooks/use-permission';
 
 const baseNavigation = [
   { name: '控制台', href: '/', icon: LayoutDashboard },
@@ -38,7 +36,7 @@ const baseNavigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { role, roleInfo, logout, canManageUsers, userInfo } = usePermission();
+  const { canManageUsers, userInfo } = usePermission();
   
   // 修改密码弹窗
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -102,6 +100,12 @@ export function Sidebar() {
     }
   };
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('is_logged_in');
+    sessionStorage.removeItem('user_info');
+    window.location.href = '/';
+  };
+
   return (
     <>
       <div
@@ -144,24 +148,13 @@ export function Sidebar() {
           })}
         </nav>
         
-        {/* 用户信息区域 */}
+        {/* 用户操作区域 */}
         <div className="border-t p-3">
           {!collapsed ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                {role === 'admin' ? (
-                  <Shield className="h-4 w-4 text-primary" />
-                ) : (
-                  <User className="h-4 w-4 text-muted-foreground" />
-                )}
-                <span className="font-medium">{userInfo?.name || '未知用户'}</span>
+              <div className="text-sm font-medium text-center">
+                {userInfo?.name || '用户'}
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{USER_ROLES[role]?.label || role}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {roleInfo.description}
-              </p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -176,7 +169,7 @@ export function Sidebar() {
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={logout}
+                  onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 mr-1" />
                   退出
@@ -185,11 +178,6 @@ export function Sidebar() {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              {role === 'admin' ? (
-                <Shield className="h-5 w-5 text-primary" />
-              ) : (
-                <User className="h-5 w-5 text-muted-foreground" />
-              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -201,7 +189,7 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={logout}
+                onClick={handleLogout}
                 title="退出登录"
               >
                 <LogOut className="h-4 w-4" />
@@ -216,9 +204,6 @@ export function Sidebar() {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>修改密码</DialogTitle>
-            <DialogDescription>
-              为账号 {userInfo?.username} 修改登录密码
-            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">

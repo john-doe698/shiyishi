@@ -14,22 +14,38 @@ function simpleHash(password: string): string {
   return Math.abs(hash).toString(16).padStart(16, '0');
 }
 
-// 初始化默认管理员账号
-async function initDefaultAdmin() {
-  const { data: existingAdmin } = await supabase
+// 初始化默认账号
+async function initDefaultUsers() {
+  // 检查是否已初始化
+  const { data: existingUsers } = await supabase
     .from('users')
-    .select('id')
-    .eq('username', 'admin')
-    .single();
+    .select('username')
+    .in('username', ['admin', 'manager']);
 
-  if (!existingAdmin) {
+  const existingUsernames = existingUsers?.map(u => u.username) || [];
+
+  // 创建超级管理员
+  if (!existingUsernames.includes('admin')) {
     await supabase
       .from('users')
       .insert({
         username: 'admin',
         password: simpleHash('admin123'),
-        name: '系统管理员',
+        name: '超级管理员',
         role: 'admin',
+        status: 'active',
+      });
+  }
+
+  // 创建管理员（无删除权限）
+  if (!existingUsernames.includes('manager')) {
+    await supabase
+      .from('users')
+      .insert({
+        username: 'manager',
+        password: simpleHash('manager123'),
+        name: '管理员',
+        role: 'manager',
         status: 'active',
       });
   }
@@ -38,8 +54,8 @@ async function initDefaultAdmin() {
 // 登录验证
 export async function POST(request: NextRequest) {
   try {
-    // 确保默认管理员存在
-    await initDefaultAdmin();
+    // 确保默认账号存在
+    await initDefaultUsers();
 
     const body = await request.json();
     const { username, password } = body;

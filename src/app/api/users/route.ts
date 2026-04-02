@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 const supabase = getSupabaseClient();
-import { users } from '@/storage/database/shared/schema';
 
 // 简单的密码加密函数（生产环境应使用 bcrypt）
 function simpleHash(password: string): string {
@@ -15,13 +14,18 @@ function simpleHash(password: string): string {
   return Math.abs(hash).toString(16).padStart(16, '0');
 }
 
-// 获取用户列表（仅管理员）
+// 检查是否有管理用户的权限
+function canManageUsers(role: string | null): boolean {
+  return role === 'admin' || role === 'manager';
+}
+
+// 获取用户列表（admin和manager可访问）
 export async function GET(request: NextRequest) {
   try {
     const role = request.headers.get('x-user-role');
     
-    if (role !== 'admin') {
-      return NextResponse.json({ error: '权限不足：只有管理员可以查看用户列表' }, { status: 403 });
+    if (!canManageUsers(role)) {
+      return NextResponse.json({ error: '权限不足' }, { status: 403 });
     }
 
     const { data, error } = await supabase
@@ -40,13 +44,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 创建用户（仅管理员）
+// 创建用户（admin和manager可创建）
 export async function POST(request: NextRequest) {
   try {
     const role = request.headers.get('x-user-role');
     
-    if (role !== 'admin') {
-      return NextResponse.json({ error: '权限不足：只有管理员可以创建用户' }, { status: 403 });
+    if (!canManageUsers(role)) {
+      return NextResponse.json({ error: '权限不足' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -54,6 +58,11 @@ export async function POST(request: NextRequest) {
 
     if (!username || !password || !name) {
       return NextResponse.json({ error: '用户名、密码和显示名称不能为空' }, { status: 400 });
+    }
+
+    // manager只能创建planner
+    if (role === 'manager' && userRole !== 'planner') {
+      return NextResponse.json({ error: '权限不足：只能创建规划师账号' }, { status: 403 });
     }
 
     // 检查用户名是否已存在

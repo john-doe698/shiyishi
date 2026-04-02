@@ -2,24 +2,25 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type UserRole = 'admin' | 'planner';
+export type UserRole = 'admin' | 'manager' | 'planner';
 
 interface UserRoleInfo {
   role: UserRole;
   label: string;
-  description: string;
 }
 
 export const USER_ROLES: Record<UserRole, UserRoleInfo> = {
   admin: {
     role: 'admin',
+    label: '超级管理员',
+  },
+  manager: {
+    role: 'manager',
     label: '管理员',
-    description: '拥有所有权限，包括删除学生、修改课程、管理规划师等',
   },
   planner: {
     role: 'planner',
     label: '规划师',
-    description: '只能管理自己的学生、签到、报名，无法删除',
   },
 };
 
@@ -128,9 +129,12 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
   const roleInfo = USER_ROLES[role];
   
   // 权限判断
+  // 只有 admin 有删除权限
   const canDelete = role === 'admin';
-  const canEditCourse = role === 'admin';
-  const canManageUsers = role === 'admin';
+  // admin 和 manager 可以编辑课程
+  const canEditCourse = role === 'admin' || role === 'manager';
+  // admin 和 manager 可以管理用户（规划师）
+  const canManageUsers = role === 'admin' || role === 'manager';
 
   return (
     <PermissionContext.Provider value={{

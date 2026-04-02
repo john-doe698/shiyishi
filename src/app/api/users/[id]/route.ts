@@ -14,6 +14,11 @@ function simpleHash(password: string): string {
   return Math.abs(hash).toString(16).padStart(16, '0');
 }
 
+// 检查是否有管理用户的权限
+function canManageUsers(role: string | null): boolean {
+  return role === 'admin' || role === 'manager';
+}
+
 // 获取用户详情
 export async function GET(
   request: NextRequest,
@@ -24,8 +29,8 @@ export async function GET(
     const role = request.headers.get('x-user-role');
     const currentUserId = request.headers.get('x-user-id');
     
-    // 只有管理员可以查看其他用户，或者用户可以查看自己
-    if (role !== 'admin' && currentUserId !== id) {
+    // admin/manager可以查看其他用户，或者用户可以查看自己
+    if (!canManageUsers(role) && currentUserId !== id) {
       return NextResponse.json({ error: '权限不足' }, { status: 403 });
     }
 
@@ -58,6 +63,13 @@ export async function PUT(
     const body = await request.json();
     const { name, password, status, role: newRole } = body;
 
+    // 获取目标用户信息
+    const { data: targetUser } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', id)
+      .single();
+
     // 构建更新对象
     const updateData: Record<string, string | undefined> = {
       updated_at: new Date().toISOString(),
@@ -72,7 +84,7 @@ export async function PUT(
       updateData.password = simpleHash(password);
     }
 
-    // 只有管理员可以修改状态和角色
+    // admin可以修改所有用户的状态和角色
     if (role === 'admin') {
       if (status) {
         updateData.status = status;
@@ -80,8 +92,19 @@ export async function PUT(
       if (newRole) {
         updateData.role = newRole;
       }
-    } else if (currentUserId !== id) {
-      return NextResponse.json({ error: '权限不足：只能修改自己的信息' }, { status: 403 });
+    }
+    // manager只能修改planner的状态（不能修改角色）
+    else if (role === 'manager' && targetUser?.role === 'planner') {
+      if (status) {
+        updateData.status = status;
+      }
+    }
+    // 用户可以修改自己的信息
+    else if (currentUserId === id) {
+      // 只能修改name和password，已在上面处理
+    }
+    else {
+      return NextResponse.json({ error: '权限不足' }, { status: 403 });
     }
 
     const { data, error } = await supabase
@@ -102,7 +125,7 @@ export async function PUT(
   }
 }
 
-// 删除用户（仅管理员）
+// 删除用户（仅admin）
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -112,10 +135,10 @@ export async function DELETE(
     const role = request.headers.get('x-user-role');
     
     if (role !== 'admin') {
-      return NextResponse.json({ error: '权限不足：只有管理员可以删除用户' }, { status: 403 });
+      return NextResponse.json({ error: '权限不足：只有超级管理员可以删除用户' }, { status: 403 });
     }
 
-    // 检查是否是最后一个管理员
+    // 检查是否是最后一个admin
     const { data: user } = await supabase
       .from('users')
       .select('role')
@@ -129,7 +152,7 @@ export async function DELETE(
         .eq('role', 'admin');
 
       if (count && count <= 1) {
-        return NextResponse.json({ error: '不能删除最后一个管理员账号' }, { status: 400 });
+        return NextResponse.json({ error: '不能删除最后一个超级管理员账号' }, { status: 400 });
       }
     }
 

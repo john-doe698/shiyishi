@@ -43,7 +43,8 @@ interface User {
 }
 
 const ROLE_MAP: Record<string, string> = {
-  admin: '管理员',
+  admin: '超级管理员',
+  manager: '管理员',
   planner: '规划师',
 };
 
@@ -53,7 +54,7 @@ const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondar
 };
 
 export default function UsersPage() {
-  const { canManageUsers, role: currentRole, userInfo } = usePermission();
+  const { canManageUsers, canDelete, role: currentRole, userInfo } = usePermission();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -316,7 +317,12 @@ export default function UsersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="planner">规划师</SelectItem>
-                    <SelectItem value="admin">管理员</SelectItem>
+                    {currentRole === 'admin' && (
+                      <>
+                        <SelectItem value="manager">管理员</SelectItem>
+                        <SelectItem value="admin">超级管理员</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -387,13 +393,16 @@ export default function UsersPage() {
                         >
                           <Key className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteUser(user)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteUser(user)}
+                            title="删除"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -420,21 +429,24 @@ export default function UsersPage() {
                 placeholder="请输入显示名称"
               />
             </div>
-            <div className="grid gap-2">
-              <Label>角色</Label>
-              <Select
-                value={editData.role}
-                onValueChange={(value) => setEditData({ ...editData, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="planner">规划师</SelectItem>
-                  <SelectItem value="admin">管理员</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {currentRole === 'admin' && (
+              <div className="grid gap-2">
+                <Label>角色</Label>
+                <Select
+                  value={editData.role}
+                  onValueChange={(value) => setEditData({ ...editData, role: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planner">规划师</SelectItem>
+                    <SelectItem value="manager">管理员</SelectItem>
+                    <SelectItem value="admin">超级管理员</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label>状态</Label>
               <Select
