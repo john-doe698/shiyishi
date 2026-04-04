@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, name, role, status')
+      .select('id, username, name, role, status, permissions')
       .eq('username', username)
       .eq('password', hashedPassword)
       .single();
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
         username: user.username,
         name: user.name,
         role: user.role,
+        permissions: user.permissions || null,
       },
     });
   } catch (error) {

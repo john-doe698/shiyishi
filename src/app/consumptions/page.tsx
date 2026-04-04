@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { History, TrendingUp, Pencil, Trash2 } from 'lucide-react';
 import { usePermission } from '@/hooks/use-permission';
+import { PERMISSIONS } from '@/lib/permissions';
 
 interface Consumption {
   id: number;
@@ -273,7 +274,7 @@ export default function ConsumptionsPage() {
   };
 
   // 检查是否有编辑或删除权限
-  const canEdit = hasPermission('check_in');
+  const canEdit = hasPermission(PERMISSIONS.CHECK_IN);
 
   return (
     <div className="space-y-6">
