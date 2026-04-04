@@ -54,7 +54,6 @@ export async function PUT(
         .from('check_ins')
         .update({
           remark: remark || originalCheckIn.remark,
-          updated_at: new Date().toISOString(),
         })
         .eq('id', id)
         .select()
@@ -101,21 +100,24 @@ export async function PUT(
           remaining_purchased: (originalEnrollment.remaining_purchased || 0) + originalConsumePurchased,
           remaining_gifted: (originalEnrollment.remaining_gifted || 0) + originalConsumeGifted,
           remaining_hours: (originalEnrollment.remaining_hours || 0) + originalHours,
-          updated_at: new Date().toISOString(),
         })
         .eq('id', originalEnrollment.id);
       
       // 回退学生总课时
-      await client
+      const { data: student } = await client
         .from('students')
-        .update({
-          remaining_hours: client.rpc('increment_remaining_hours', { 
-            student_id: originalCheckIn.student_id, 
-            hours: originalHours 
-          }),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', originalCheckIn.student_id);
+        .select('remaining_hours')
+        .eq('id', originalCheckIn.student_id)
+        .single();
+      
+      if (student) {
+        await client
+          .from('students')
+          .update({
+            remaining_hours: (student.remaining_hours || 0) + originalHours,
+          })
+          .eq('id', originalCheckIn.student_id);
+      }
     }
     
     // 4. 检查新的学生课程报名记录
@@ -150,7 +152,6 @@ export async function PUT(
         course_id: newCourseId,
         hours: newHours,
         remark: remark || originalCheckIn.remark,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select()
@@ -180,7 +181,6 @@ export async function PUT(
         remaining_purchased: currentPurchased - consumePurchased,
         remaining_gifted: currentGifted - consumeGifted,
         remaining_hours: totalRemaining - newHours,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', newEnrollment.id);
     
@@ -196,7 +196,6 @@ export async function PUT(
         .from('students')
         .update({
           remaining_hours: Math.max(0, (student.remaining_hours || 0) - newHours),
-          updated_at: new Date().toISOString(),
         })
         .eq('id', newStudentId);
     }
@@ -222,7 +221,6 @@ export async function PUT(
           hours: newHours,
           amount,
           remark: remarkText,
-          updated_at: new Date().toISOString(),
         })
         .eq('id', originalConsumption.id);
     }
@@ -307,7 +305,6 @@ export async function DELETE(
               remaining_purchased: (enrollment.remaining_purchased || 0) + consumePurchased,
               remaining_gifted: (enrollment.remaining_gifted || 0) + consumeGifted,
               remaining_hours: (enrollment.remaining_hours || 0) + checkIn.hours,
-              updated_at: new Date().toISOString(),
             })
             .eq('id', enrollment.id);
           
@@ -323,7 +320,6 @@ export async function DELETE(
               .from('students')
               .update({
                 remaining_hours: (student.remaining_hours || 0) + checkIn.hours,
-                updated_at: new Date().toISOString(),
               })
               .eq('id', checkIn.student_id);
           }
