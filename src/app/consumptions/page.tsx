@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { History, TrendingUp } from 'lucide-react';
+import { usePermission } from '@/hooks/use-permission';
 
 interface Consumption {
   id: number;
@@ -51,6 +52,7 @@ interface Student {
 }
 
 export default function ConsumptionsPage() {
+  const { role, userInfo } = usePermission();
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -64,6 +66,12 @@ export default function ConsumptionsPage() {
   const [totalHours, setTotalHours] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
 
+  // 通用请求头
+  const getAuthHeaders = () => ({
+    'x-user-role': role,
+    'x-user-id': userInfo?.id?.toString() || '',
+  });
+
   useEffect(() => {
     fetchCourses();
     fetchStudents();
@@ -76,7 +84,9 @@ export default function ConsumptionsPage() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/courses');
+      const response = await fetch('/api/courses', {
+        headers: getAuthHeaders(),
+      });
       const result = await response.json();
       if (result.data) {
         setCourses(result.data);
@@ -88,7 +98,9 @@ export default function ConsumptionsPage() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/api/students');
+      const response = await fetch('/api/students', {
+        headers: getAuthHeaders(),
+      });
       const result = await response.json();
       if (result.data) {
         setStudents(result.data);
@@ -109,7 +121,9 @@ export default function ConsumptionsPage() {
         url += `course_id=${filterCourse}`;
       }
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
       const result = await response.json();
       if (result.data) {
         setConsumptions(result.data);

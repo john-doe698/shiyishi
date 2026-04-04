@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Calendar, History, TrendingUp, Clock } from 'lucide-react';
+import { usePermission } from '@/hooks/use-permission';
 
 interface Student {
   id: number;
@@ -102,6 +103,7 @@ interface Consumption {
 }
 
 export default function CheckInPage() {
+  const { role, userInfo } = usePermission();
   const [students, setStudents] = useState<Student[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
@@ -128,6 +130,12 @@ export default function CheckInPage() {
   const [totalHours, setTotalHours] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
 
+  // 通用请求头
+  const getAuthHeaders = () => ({
+    'x-user-role': role,
+    'x-user-id': userInfo?.id?.toString() || '',
+  });
+
   useEffect(() => {
     fetchStudents();
     fetchCourses();
@@ -140,7 +148,9 @@ export default function CheckInPage() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/api/students?status=active');
+      const response = await fetch('/api/students?status=active', {
+        headers: getAuthHeaders(),
+      });
       const result = await response.json();
       if (result.data) {
         setStudents(result.data);
@@ -152,7 +162,9 @@ export default function CheckInPage() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/courses?status=active');
+      const response = await fetch('/api/courses?status=active', {
+        headers: getAuthHeaders(),
+      });
       const result = await response.json();
       if (result.data) {
         setCourses(result.data);
@@ -169,7 +181,9 @@ export default function CheckInPage() {
       return;
     }
     try {
-      const response = await fetch(`/api/students/enrolled-courses?student_id=${studentId}`);
+      const response = await fetch(`/api/students/enrolled-courses?student_id=${studentId}`, {
+        headers: getAuthHeaders(),
+      });
       const result = await response.json();
       if (result.data) {
         setEnrolledCourses(result.data);
@@ -201,7 +215,9 @@ export default function CheckInPage() {
         checkInUrl += `&course_id=${filterCourse}`;
       }
       
-      const checkInResponse = await fetch(checkInUrl);
+      const checkInResponse = await fetch(checkInUrl, {
+        headers: getAuthHeaders(),
+      });
       const checkInResult = await checkInResponse.json();
       if (checkInResult.data) {
         setCheckIns(checkInResult.data);
@@ -216,7 +232,9 @@ export default function CheckInPage() {
         consumptionUrl += `course_id=${filterCourse}`;
       }
       
-      const consumptionResponse = await fetch(consumptionUrl);
+      const consumptionResponse = await fetch(consumptionUrl, {
+        headers: getAuthHeaders(),
+      });
       const consumptionResult = await consumptionResponse.json();
       if (consumptionResult.data) {
         setConsumptions(consumptionResult.data);
@@ -247,7 +265,10 @@ export default function CheckInPage() {
     try {
       const response = await fetch('/api/check-ins', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({
           student_id: parseInt(newCheckIn.student_id),
           course_id: parseInt(newCheckIn.course_id),

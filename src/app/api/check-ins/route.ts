@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
   const course_id = searchParams.get('course_id');
   const date = searchParams.get('date'); // YYYY-MM-DD
   
+  // 获取当前用户信息
+  const userRole = request.headers.get('x-user-role');
+  const userId = request.headers.get('x-user-id');
+  
   let query = client
     .from('check_ins')
     .select(`
@@ -17,7 +21,8 @@ export async function GET(request: NextRequest) {
       students (
         id,
         name,
-        phone
+        phone,
+        planner_id
       ),
       courses (
         id,
@@ -44,7 +49,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   
-  return NextResponse.json({ data });
+  // 权限过滤：规划师只能看到自己学生的签到记录
+  let filteredData = data;
+  if (userRole === 'planner' && userId && data) {
+    filteredData = data.filter((item: { students: { planner_id: number | null } | null }) => {
+      const student = item.students;
+      return student && student.planner_id === parseInt(userId);
+    });
+  }
+  
+  return NextResponse.json({ data: filteredData });
 }
 
 // POST - 学生签到
@@ -52,6 +66,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { student_id, course_id, hours, status, remark } = body;
+    
+    // 获取当前用户信息
+    const userRole = request.headers.get('x-user-role');
+    const userId = request.headers.get('x-user-id');
+    
+    // 权限验证：规划师只能给自己的学生签到
+    if (userRole === 'planner' && userId) {
+      const { data: student } = await client
+        .from('students')
+        .select('planner_id')
+        .eq('id', student_id)
+        .single();
+      
+      if (!student || student.planner_id !== parseInt(userId)) {
+        return NextResponse.json({ error: '权限不足：只能为自己的学生签到' }, { status: 403 });
+      }
+    }
     
     const consumeHours = hours || 1;
     
