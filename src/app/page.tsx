@@ -4,7 +4,15 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Calendar, BookOpen, Clock, TrendingUp, AlertTriangle, BellRing } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Users, Calendar, BookOpen, Clock, TrendingUp, AlertTriangle, BellRing, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { usePermission } from '@/hooks/use-permission';
 
@@ -14,6 +22,16 @@ interface Stats {
   totalCourses: number;
   monthTotalHours: number;
   monthTotalAmount: number;
+}
+
+interface PlannerStats {
+  plannerId: number;
+  plannerName: string;
+  plannerUsername: string;
+  totalStudents: number;
+  todayCheckIns: number;
+  monthHours: number;
+  monthAmount: number;
 }
 
 interface ExpiringEnrollment {
@@ -64,6 +82,7 @@ interface ExpiredEnrollment {
 export default function DashboardPage() {
   const { role, userInfo } = usePermission();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [plannerStats, setPlannerStats] = useState<PlannerStats[]>([]);
   const [loading, setLoading] = useState(true);
   
   // 续费提醒
@@ -71,9 +90,15 @@ export default function DashboardPage() {
   const [lowHoursStudents, setLowHoursStudents] = useState<LowHoursStudent[]>([]);
   const [expiredEnrollments, setExpiredEnrollments] = useState<ExpiredEnrollment[]>([]);
 
+  // 是否是超级管理员
+  const isAdmin = role === 'admin';
+
   useEffect(() => {
     fetchStats();
     fetchReminders();
+    if (isAdmin) {
+      fetchPlannerStats();
+    }
   }, [role, userInfo]);
 
   const fetchStats = async () => {
@@ -92,6 +117,23 @@ export default function DashboardPage() {
       console.error('获取统计数据失败:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPlannerStats = async () => {
+    try {
+      const response = await fetch('/api/stats?by_planner=true', {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
+      });
+      const result = await response.json();
+      if (result.data) {
+        setPlannerStats(result.data);
+      }
+    } catch (error) {
+      console.error('获取规划师统计失败:', error);
     }
   };
 
@@ -328,22 +370,72 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
+        {/* 系统功能说明 - 仅超级管理员可见 */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>系统功能说明</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>本系统支持以下功能：</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>学生管理</strong>：录入学生信息、查看学生详情、管理学生状态</li>
+                <li><strong>课程管理</strong>：创建课程、设置课时价格</li>
+                <li><strong>签到管理</strong>：学生签到、自动扣减课时</li>
+                <li><strong>消课记录</strong>：查看课时消耗明细和消费金额</li>
+                <li><strong>续费提醒</strong>：即将到期、已过期、课时不足提醒</li>
+                <li><strong>权限管理</strong>：超级管理员、管理员、规划师三种角色</li>
+                <li><strong>赠送课时</strong>：支持赠送课时，先消耗购买课时再消耗赠送课时</li>
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* 规划师统计看板 - 仅超级管理员可见 */}
+      {isAdmin && plannerStats.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>系统说明</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <UserCog className="h-5 w-5" />
+              规划师数据统计
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>本系统支持以下功能：</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li><strong>学生管理</strong>：录入学生信息、查看学生详情、管理学生状态</li>
-              <li><strong>课程管理</strong>：创建课程、设置课时价格</li>
-              <li><strong>签到管理</strong>：学生签到、自动扣减课时</li>
-              <li><strong>消课记录</strong>：查看课时消耗明细和消费金额</li>
-              <li><strong>续费提醒</strong>：即将到期、已过期、课时不足提醒</li>
-            </ul>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>规划师</TableHead>
+                  <TableHead className="text-center">在籍学生</TableHead>
+                  <TableHead className="text-center">今日签到</TableHead>
+                  <TableHead className="text-center">本月消课（课时）</TableHead>
+                  <TableHead className="text-center">本月消课（金额）</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {plannerStats.map((planner) => (
+                  <TableRow key={planner.plannerId}>
+                    <TableCell>
+                      <div className="font-medium">{planner.plannerName}</div>
+                      <div className="text-xs text-muted-foreground">{planner.plannerUsername}</div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="secondary">{planner.totalStudents}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={planner.todayCheckIns > 0 ? 'default' : 'secondary'}>
+                        {planner.todayCheckIns}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">{planner.monthHours}</TableCell>
+                    <TableCell className="text-center">¥{planner.monthAmount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
-      </div>
+      )}
     </div>
   );
 }
