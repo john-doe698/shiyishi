@@ -181,10 +181,13 @@ export async function POST(request: NextRequest) {
       
       // 计算消费金额：只有消耗购买课时才产生金额
       // 单价 = 报名金额 ÷ 购买课时数
+      // 保留小数点后两位，不四舍五入（向下截断）
       let amount = '0';
       if (consumePurchased > 0 && Number(enrollment.total_hours) > 0) {
         const unitPrice = Number(enrollment.amount) / Number(enrollment.total_hours);
-        amount = (unitPrice * consumePurchased).toFixed(2);
+        const totalAmount = unitPrice * consumePurchased;
+        // 向下取整到两位小数
+        amount = (Math.floor(totalAmount * 100) / 100).toFixed(2);
       }
       
       // 创建消课记录

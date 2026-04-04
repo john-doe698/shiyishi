@@ -201,10 +201,13 @@ export async function PUT(
     }
     
     // 7. 计算新的消费金额
+    // 保留小数点后两位，不四舍五入（向下截断）
     let amount = '0';
     if (consumePurchased > 0 && Number(newEnrollment.total_hours) > 0) {
       const unitPrice = Number(newEnrollment.amount) / Number(newEnrollment.total_hours);
-      amount = (unitPrice * consumePurchased).toFixed(2);
+      const totalAmount = unitPrice * consumePurchased;
+      // 向下取整到两位小数
+      amount = (Math.floor(totalAmount * 100) / 100).toFixed(2);
     }
     
     // 8. 更新消课记录
