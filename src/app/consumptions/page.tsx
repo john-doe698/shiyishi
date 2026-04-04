@@ -17,8 +17,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { History, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { History, TrendingUp, Pencil, Trash2 } from 'lucide-react';
 import { usePermission } from '@/hooks/use-permission';
 
 interface Consumption {
@@ -52,7 +63,7 @@ interface Student {
 }
 
 export default function ConsumptionsPage() {
-  const { role, userInfo } = usePermission();
+  const { role, userInfo, hasPermission } = usePermission();
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -65,6 +76,22 @@ export default function ConsumptionsPage() {
   // 统计数据
   const [totalHours, setTotalHours] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
+  
+  // 编辑弹窗
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editConsumption, setEditConsumption] = useState<Consumption | null>(null);
+  const [editData, setEditData] = useState({
+    student_id: '',
+    course_id: '',
+    hours: 1,
+    remark: '',
+  });
+  const [saving, setSaving] = useState(false);
+  
+  // 删除确认弹窗
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConsumption, setDeleteConsumption] = useState<Consumption | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // 通用请求头
   const getAuthHeaders = () => ({
@@ -141,6 +168,100 @@ export default function ConsumptionsPage() {
     }
   };
 
+  const handleEdit = (consumption: Consumption) => {
+    if (!consumption.check_in_id) {
+      alert('该消课记录没有关联的签到记录，无法修改');
+      return;
+    }
+    
+    setEditConsumption(consumption);
+    setEditData({
+      student_id: consumption.student_id.toString(),
+      course_id: consumption.course_id.toString(),
+      hours: consumption.hours,
+      remark: consumption.remark || '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editConsumption || !editConsumption.check_in_id) return;
+    
+    if (!editData.student_id || !editData.course_id || editData.hours < 1) {
+      alert('请填写完整信息');
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/check-ins/${editConsumption.check_in_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          student_id: parseInt(editData.student_id),
+          course_id: parseInt(editData.course_id),
+          hours: editData.hours,
+          remark: editData.remark,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.data) {
+        setEditDialogOpen(false);
+        fetchConsumptions();
+        alert('修改成功');
+      } else {
+        alert(result.error || '修改失败');
+      }
+    } catch (error) {
+      console.error('修改失败:', error);
+      alert('修改失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = (consumption: Consumption) => {
+    if (!consumption.check_in_id) {
+      alert('该消课记录没有关联的签到记录，无法删除');
+      return;
+    }
+    
+    setDeleteConsumption(consumption);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConsumption || !deleteConsumption.check_in_id) return;
+    
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/check-ins/${deleteConsumption.check_in_id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setDeleteDialogOpen(false);
+        fetchConsumptions();
+        alert('删除成功，已恢复课时');
+      } else {
+        alert(result.error || '删除失败');
+      }
+    } catch (error) {
+      console.error('删除失败:', error);
+      alert('删除失败');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('zh-CN', {
       year: 'numeric',
@@ -150,6 +271,9 @@ export default function ConsumptionsPage() {
       minute: '2-digit',
     });
   };
+
+  // 检查是否有编辑或删除权限
+  const canEdit = hasPermission('check_in');
 
   return (
     <div className="space-y-6">
@@ -240,19 +364,49 @@ export default function ConsumptionsPage() {
                   <TableHead className="text-center">消费金额</TableHead>
                   <TableHead>备注</TableHead>
                   <TableHead>消课时间</TableHead>
+                  {canEdit && <TableHead className="text-center">操作</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {consumptions.slice(0, 100).map((consumption) => (
                   <TableRow key={consumption.id}>
                     <TableCell className="font-medium">
-                      {consumption.students?.name || '-'}
+                      <button
+                        className="hover:text-primary hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => canEdit && handleEdit(consumption)}
+                        disabled={!canEdit}
+                        title={canEdit ? "点击修改签到消课记录" : "无权限修改"}
+                      >
+                        {consumption.students?.name || '-'}
+                      </button>
                     </TableCell>
                     <TableCell>{consumption.courses?.name || '-'}</TableCell>
                     <TableCell className="text-center">{consumption.hours}</TableCell>
                     <TableCell className="text-center">¥{consumption.amount}</TableCell>
                     <TableCell>{consumption.remark || '-'}</TableCell>
                     <TableCell>{formatDateTime(consumption.created_at)}</TableCell>
+                    {canEdit && (
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(consumption)}
+                            title="修改"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(consumption)}
+                            title="撤销签到（恢复课时）"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -260,6 +414,128 @@ export default function ConsumptionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 编辑弹窗 */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>修改签到消课记录</DialogTitle>
+            <DialogDescription>
+              修改学生、课程或课时数，系统会自动重新计算课时和金额
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>学生</Label>
+              <Select
+                value={editData.student_id}
+                onValueChange={(value) => setEditData({ ...editData, student_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择学生" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map((student) => (
+                    <SelectItem key={student.id} value={student.id.toString()}>
+                      {student.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>课程</Label>
+              <Select
+                value={editData.course_id}
+                onValueChange={(value) => setEditData({ ...editData, course_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择课程" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id.toString()}>
+                      {course.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>消耗课时</Label>
+              <Input
+                type="number"
+                min={1}
+                value={editData.hours}
+                onChange={(e) => setEditData({ ...editData, hours: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>备注</Label>
+              <Textarea
+                value={editData.remark}
+                onChange={(e) => setEditData({ ...editData, remark: e.target.value })}
+                placeholder="可选"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? '保存中...' : '保存'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认弹窗 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>撤销签到</DialogTitle>
+            <DialogDescription>
+              确定要撤销此签到记录吗？系统将自动恢复学生的课时。
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">学生：</span>
+                <span className="font-medium">{deleteConsumption?.students?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">课程：</span>
+                <span className="font-medium">{deleteConsumption?.courses?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">消耗课时：</span>
+                <span className="font-medium">{deleteConsumption?.hours} 节</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">消费金额：</span>
+                <span className="font-medium">¥{deleteConsumption?.amount}</span>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleting}>
+              {deleting ? '删除中...' : '确认撤销'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
