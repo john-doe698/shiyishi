@@ -63,7 +63,7 @@ interface Student {
 }
 
 export default function ConsumptionsPage() {
-  const { role, userInfo, hasPermission } = usePermission();
+  const { role, userInfo, isLoggedIn } = usePermission();
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -272,8 +272,8 @@ export default function ConsumptionsPage() {
     });
   };
 
-  // 检查是否有编辑或删除权限（admin, manager, planner 都有权限）
-  const canEdit = role === 'admin' || role === 'manager' || role === 'planner';
+  // 检查是否有编辑或删除权限（登录用户都有权限）
+  const canEdit = isLoggedIn && (role === 'admin' || role === 'manager' || role === 'planner');
 
   return (
     <div className="space-y-6">
@@ -371,14 +371,17 @@ export default function ConsumptionsPage() {
                 {consumptions.slice(0, 100).map((consumption) => (
                   <TableRow key={consumption.id}>
                     <TableCell className="font-medium">
-                      <button
-                        className="hover:text-primary hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                        onClick={() => canEdit && handleEdit(consumption)}
-                        disabled={!canEdit}
-                        title={canEdit ? "点击修改签到消课记录" : "无权限修改"}
-                      >
-                        {consumption.students?.name || '-'}
-                      </button>
+                      {canEdit ? (
+                        <button
+                          className="text-primary hover:underline cursor-pointer"
+                          onClick={() => handleEdit(consumption)}
+                          title="点击修改签到消课记录"
+                        >
+                          {consumption.students?.name || '-'}
+                        </button>
+                      ) : (
+                        <span>{consumption.students?.name || '-'}</span>
+                      )}
                     </TableCell>
                     <TableCell>{consumption.courses?.name || '-'}</TableCell>
                     <TableCell className="text-center">{consumption.hours}</TableCell>
