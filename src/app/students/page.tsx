@@ -196,10 +196,13 @@ export default function StudentsPage() {
 
   // 分配规划师
   const handleAssignPlanner = async () => {
-    if (!assigningStudent || !selectedPlannerId) {
-      alert('请选择规划师');
+    if (!assigningStudent) {
+      alert('请选择学生');
       return;
     }
+    
+    // "none" 表示取消分配（设置为 null）
+    const plannerIdValue = selectedPlannerId === 'none' ? null : parseInt(selectedPlannerId);
     
     try {
       const response = await fetch(`/api/students/${assigningStudent.id}`, {
@@ -210,7 +213,7 @@ export default function StudentsPage() {
           'x-user-id': userInfo?.id?.toString() || '',
         },
         body: JSON.stringify({ 
-          planner_id: parseInt(selectedPlannerId),
+          planner_id: plannerIdValue,
         }),
       });
       
@@ -225,6 +228,7 @@ export default function StudentsPage() {
       }
     } catch (error) {
       console.error('分配规划师失败:', error);
+      alert('分配规划师失败，请重试');
     }
   };
 
@@ -487,7 +491,8 @@ export default function StudentsPage() {
             size="icon"
             onClick={() => {
               setAssigningStudent(student);
-              setSelectedPlannerId(student.planner_id?.toString() || '');
+              // 如果学生已有规划师，显示其 ID；否则显示 "none"（未分配）
+              setSelectedPlannerId(student.planner_id?.toString() || 'none');
               setAssignDialogOpen(true);
             }}
             title="分配规划师"
@@ -950,7 +955,7 @@ export default function StudentsPage() {
                 <SelectValue placeholder="请选择规划师" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">未分配</SelectItem>
+                <SelectItem value="none">未分配</SelectItem>
                 {planners.map((planner) => (
                   <SelectItem key={planner.id} value={planner.id.toString()}>
                     {planner.name} ({planner.username})

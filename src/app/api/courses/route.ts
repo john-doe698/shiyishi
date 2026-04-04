@@ -9,9 +9,9 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status');
   const education_level = searchParams.get('education_level');
   
-  // 获取当前登录用户信息
-  const userStr = request.headers.get('x-user');
-  const currentUser = userStr ? JSON.parse(userStr) : null;
+  // 获取当前登录用户信息（与其他 API 保持一致的 header 格式）
+  const userRole = request.headers.get('x-user-role');
+  const userId = request.headers.get('x-user-id');
   
   let query = client
     .from('courses')
@@ -36,8 +36,7 @@ export async function GET(request: NextRequest) {
     const courseIds = courses.map((c: { id: number }) => c.id);
     
     // 构建报名记录查询
-    // 规划师只能看到自己添加的学生，管理员可以看到所有学生
-    let enrollmentsQuery = client
+    const { data: enrollments } = await client
       .from('enrollments')
       .select(`
         course_id,
@@ -50,8 +49,6 @@ export async function GET(request: NextRequest) {
         )
       `)
       .in('course_id', courseIds);
-    
-    const { data: enrollments } = await enrollmentsQuery;
     
     // 统计每个课程的学生
     const courseStudents: Record<number, { names: string[]; count: number }> = {};
@@ -69,8 +66,8 @@ export async function GET(request: NextRequest) {
         // 只统计有效的、在读的学生
         if (enrollment.status === 'active' && student && student.status === 'active') {
           // 权限过滤：规划师只能看到自己添加的学生
-          const isPlanner = currentUser?.role === 'planner';
-          const canViewStudent = !isPlanner || (student.planner_id === currentUser?.id);
+          const isPlanner = userRole === 'planner';
+          const canViewStudent = !isPlanner || (student.planner_id === parseInt(userId || '0'));
           
           if (canViewStudent && !courseStudents[courseId].names.includes(student.name)) {
             courseStudents[courseId].names.push(student.name);

@@ -54,7 +54,7 @@ const EDUCATION_LEVEL_MAP: Record<string, string> = {
 };
 
 export default function CoursesPage() {
-  const { canEditCourse, canDelete } = usePermission();
+  const { canEditCourse, canDelete, role, userInfo } = usePermission();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('primary');
@@ -76,7 +76,12 @@ export default function CoursesPage() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/api/courses');
+      const response = await fetch('/api/courses', {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
+      });
       const result = await response.json();
       if (result.data) {
         setCourses(result.data);

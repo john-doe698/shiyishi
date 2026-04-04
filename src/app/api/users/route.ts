@@ -28,10 +28,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '权限不足' }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    // 获取查询参数中的 role 过滤
+    const { searchParams } = new URL(request.url);
+    const roleFilter = searchParams.get('role');
+
+    let query = supabase
       .from('users')
       .select('id, username, name, role, status, created_at, updated_at')
       .order('created_at', { ascending: false });
+
+    // 如果有 role 参数，进行过滤
+    if (roleFilter) {
+      query = query.eq('role', roleFilter);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
