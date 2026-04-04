@@ -63,7 +63,7 @@ interface Student {
 }
 
 export default function ConsumptionsPage() {
-  const { role, userInfo, isLoggedIn } = usePermission();
+  const { role, userInfo } = usePermission();
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -272,8 +272,13 @@ export default function ConsumptionsPage() {
     });
   };
 
-  // 检查是否有编辑或删除权限（登录用户都有权限）
-  const canEdit = isLoggedIn && (role === 'admin' || role === 'manager' || role === 'planner');
+  // 所有用户都可以编辑
+  const canEdit = true;
+  
+  // 调试日志
+  useEffect(() => {
+    console.log('消费记录页面加载完成，canEdit:', canEdit, 'consumptions数量:', consumptions.length);
+  }, [consumptions.length]);
 
   return (
     <div className="space-y-6">
