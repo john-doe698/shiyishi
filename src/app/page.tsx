@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Calendar, BookOpen, Clock, TrendingUp, AlertTriangle, BellRing } from 'lucide-react';
 import Link from 'next/link';
+import { usePermission } from '@/hooks/use-permission';
 
 interface Stats {
   totalStudents: number;
@@ -61,6 +62,7 @@ interface ExpiredEnrollment {
 }
 
 export default function DashboardPage() {
+  const { role, userInfo } = usePermission();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -72,11 +74,16 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchStats();
     fetchReminders();
-  }, []);
+  }, [role, userInfo]);
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/stats');
+      const response = await fetch('/api/stats', {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
+      });
       const result = await response.json();
       if (result.data) {
         setStats(result.data);
@@ -90,7 +97,12 @@ export default function DashboardPage() {
 
   const fetchReminders = async () => {
     try {
-      const response = await fetch('/api/reminders?days=7');
+      const response = await fetch('/api/reminders?days=7', {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
+      });
       const result = await response.json();
       if (result.data) {
         setExpiringEnrollments(result.data.expiringEnrollments || []);

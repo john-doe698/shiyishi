@@ -30,7 +30,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePermission } from '@/hooks/use-permission';
 
@@ -45,6 +45,13 @@ interface Student {
   remaining_hours: number;
   remark: string | null;
   created_at: string;
+  planner_id?: number | null;
+}
+
+interface Planner {
+  id: number;
+  name: string;
+  username: string;
 }
 
 interface Course {
@@ -103,10 +110,21 @@ export default function StudentsPage() {
     start_date: new Date().toISOString().split('T')[0],
     expiry_date: '',
   });
+  
+  // 分配规划师弹窗
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assigningStudent, setAssigningStudent] = useState<Student | null>(null);
+  const [planners, setPlanners] = useState<Planner[]>([]);
+  const [selectedPlannerId, setSelectedPlannerId] = useState<string>('');
 
   useEffect(() => {
     fetchStudents();
     fetchCourses();
+    
+    // 如果是超级管理员，获取规划师列表
+    if (role === 'admin') {
+      fetchPlanners();
+    }
     
     // 检查 URL 参数，是否打开添加弹窗
     const params = new URLSearchParams(window.location.search);
@@ -155,6 +173,58 @@ export default function StudentsPage() {
       }
     } catch (error) {
       console.error('获取课程列表失败:', error);
+    }
+  };
+
+  // 获取规划师列表（超级管理员使用）
+  const fetchPlanners = async () => {
+    try {
+      const response = await fetch('/api/users?role=planner', {
+        headers: {
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
+      });
+      const result = await response.json();
+      if (result.data) {
+        setPlanners(result.data);
+      }
+    } catch (error) {
+      console.error('获取规划师列表失败:', error);
+    }
+  };
+
+  // 分配规划师
+  const handleAssignPlanner = async () => {
+    if (!assigningStudent || !selectedPlannerId) {
+      alert('请选择规划师');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/students/${assigningStudent.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-role': role,
+          'x-user-id': userInfo?.id?.toString() || '',
+        },
+        body: JSON.stringify({ 
+          planner_id: parseInt(selectedPlannerId),
+        }),
+      });
+      
+      const result = await response.json();
+      if (result.data) {
+        setAssignDialogOpen(false);
+        setAssigningStudent(null);
+        setSelectedPlannerId('');
+        fetchStudents();
+      } else if (result.error) {
+        alert(result.error);
+      }
+    } catch (error) {
+      console.error('分配规划师失败:', error);
     }
   };
 
@@ -408,6 +478,21 @@ export default function StudentsPage() {
             title="恢复在读"
           >
             <Pencil className="h-4 w-4" />
+          </Button>
+        )}
+        {/* 超级管理员才能分配规划师 */}
+        {role === 'admin' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setAssigningStudent(student);
+              setSelectedPlannerId(student.planner_id?.toString() || '');
+              setAssignDialogOpen(true);
+            }}
+            title="分配规划师"
+          >
+            <UserPlus className="h-4 w-4" />
           </Button>
         )}
         <Button
@@ -845,6 +930,40 @@ export default function StudentsPage() {
               取消
             </Button>
             <Button onClick={handleEnroll}>确认报名</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 分配规划师弹窗 */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>分配规划师</DialogTitle>
+            <DialogDescription>
+              将学生「{assigningStudent?.name}」分配给指定规划师
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label>选择规划师</Label>
+            <Select value={selectedPlannerId} onValueChange={setSelectedPlannerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="请选择规划师" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">未分配</SelectItem>
+                {planners.map((planner) => (
+                  <SelectItem key={planner.id} value={planner.id.toString()}>
+                    {planner.name} ({planner.username})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleAssignPlanner}>确认分配</Button>
           </div>
         </DialogContent>
       </Dialog>

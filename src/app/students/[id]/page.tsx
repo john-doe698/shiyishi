@@ -416,26 +416,35 @@ export default function StudentDetailPage() {
                   <TableHead className="text-center">购买课时</TableHead>
                   <TableHead className="text-center">剩余课时</TableHead>
                   <TableHead className="text-center">金额</TableHead>
+                  <TableHead className="text-center">剩余课时费用</TableHead>
                   <TableHead className="text-center">有效期</TableHead>
                   <TableHead className="text-center">状态</TableHead>
                   <TableHead className="text-center">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {student.enrollments.map((enrollment) => (
-                  <TableRow key={enrollment.id}>
-                    <TableCell className="font-medium">
-                      {enrollment.courses?.name || '-'}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline">
-                        {EDUCATION_LEVEL_MAP[enrollment.courses?.education_level as keyof typeof EDUCATION_LEVEL_MAP] || ''} 
-                        {enrollment.courses?.class_name ? ` ${enrollment.courses.class_name}` : ''}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">{enrollment.total_hours}</TableCell>
-                    <TableCell className="text-center">{enrollment.remaining_hours}</TableCell>
-                    <TableCell className="text-center">¥{enrollment.amount}</TableCell>
+                {student.enrollments.map((enrollment) => {
+                  // 计算剩余课时费用：(报名金额 ÷ 购买课时) × 剩余课时
+                  const totalPrice = parseFloat(enrollment.amount) || 0;
+                  const purchasedHours = enrollment.total_hours || 1; // 避免除以0
+                  const remainingHours = enrollment.remaining_hours || 0;
+                  const remainingAmount = (totalPrice / purchasedHours) * remainingHours;
+                  
+                  return (
+                    <TableRow key={enrollment.id}>
+                      <TableCell className="font-medium">
+                        {enrollment.courses?.name || '-'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline">
+                          {EDUCATION_LEVEL_MAP[enrollment.courses?.education_level as keyof typeof EDUCATION_LEVEL_MAP] || ''} 
+                          {enrollment.courses?.class_name ? ` ${enrollment.courses.class_name}` : ''}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">{enrollment.total_hours}</TableCell>
+                      <TableCell className="text-center">{enrollment.remaining_hours}</TableCell>
+                      <TableCell className="text-center">¥{enrollment.amount}</TableCell>
+                      <TableCell className="text-center text-green-600 font-medium">¥{remainingAmount.toFixed(2)}</TableCell>
                     <TableCell className="text-center">
                       <div className="text-xs">
                         {formatDateShort(enrollment.start_date)} 至 {formatDateShort(enrollment.expiry_date)}
@@ -467,7 +476,8 @@ export default function StudentDetailPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+                })}
               </TableBody>
             </Table>
           )}

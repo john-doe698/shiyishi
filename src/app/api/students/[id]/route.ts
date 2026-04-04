@@ -62,7 +62,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, phone, parent_name, parent_phone, status, remark, clear_reminders } = body;
+    const { name, phone, parent_name, parent_phone, status, remark, clear_reminders, planner_id } = body;
     
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -74,6 +74,7 @@ export async function PUT(
     if (parent_phone !== undefined) updateData.parent_phone = parent_phone || null;
     if (status !== undefined) updateData.status = status;
     if (remark !== undefined) updateData.remark = remark || null;
+    if (planner_id !== undefined) updateData.planner_id = planner_id || null;
     
     const { data, error } = await client
       .from('students')
