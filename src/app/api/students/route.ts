@@ -47,7 +47,12 @@ export async function POST(request: NextRequest) {
     const { name, phone, parent_name, parent_phone, total_hours, remark } = body;
     
     // 获取当前用户信息
+    const userRole = request.headers.get('x-user-role');
     const userId = request.headers.get('x-user-id');
+    
+    // 只有规划师添加学生时才关联 planner_id
+    // 管理员和管理员添加的学生不属于任何规划师
+    const plannerId = userRole === 'planner' && userId ? parseInt(userId) : null;
     
     const { data, error } = await client
       .from('students')
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
         remaining_hours: total_hours || 0,
         remark: remark || null,
         status: 'active',
-        planner_id: userId ? parseInt(userId) : null, // 关联当前规划师
+        planner_id: plannerId, // 只有规划师添加学生时才关联
       })
       .select()
       .single();
