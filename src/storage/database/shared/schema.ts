@@ -17,6 +17,7 @@ export const users = pgTable(
 		name: varchar("name", { length: 100 }).notNull(), // 显示名称
 		role: varchar("role", { length: 20 }).notNull().default('planner'), // admin: 管理员, planner: 规划师
 		status: varchar("status", { length: 20 }).notNull().default('active'), // active: 启用, inactive: 禁用
+		permissions: text("permissions"), // 自定义权限（JSON数组字符串）
 		created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updated_at: timestamp("updated_at", { withTimezone: true }),
 	},

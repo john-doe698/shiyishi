@@ -13,9 +13,11 @@
 5. **续费提醒**：即将到期提醒、已过期提醒、课时不足提醒（阈值：≤6课时）
 6. **有效期管理**：支持设置有效期日期范围（开始日期至到期日期）
 7. **续费功能**：学生可对课程进行续费，自动计算课时和有效期
-8. **权限管理**：支持超级管理员、管理员和规划师三种角色
+8. **权限管理**：支持超级管理员、管理员和规划师三种角色，支持超级管理员自定义分配权限
 9. **用户管理**：超级管理员和管理员可创建/编辑用户账号，管理规划师信息
 10. **修改密码**：所有用户可修改自己的登录密码
+11. **规划师权限隔离**：规划师只能管理自己添加的学员
+12. **学员分配功能**：超级管理员可将学员分配给任意规划师
 
 ### 版本技术栈
 
@@ -47,12 +49,14 @@
 │   │   ├── consumptions/   # 消课记录页面
 │   │   ├── courses/        # 课程管理页面
 │   │   ├── students/       # 学生管理页面
-│   │   └── users/          # 用户管理页面（管理员可见）
+│   │   ├── users/          # 用户管理页面（管理员可见）
+│   │   └── permissions/    # 权限管理页面（超级管理员可见）
 │   ├── components/
 │   │   ├── layout/         # 布局组件
 │   │   └── ui/             # Shadcn UI 组件库
 │   ├── hooks/              # 自定义 Hooks
 │   ├── lib/                # 工具库
+│   │   └── permissions.ts  # 权限定义和配置
 │   └── storage/
 │       └── database/       # 数据库配置
 │           ├── shared/
@@ -67,7 +71,7 @@
 
 | 表名 | 说明 | 主要字段 |
 |------|------|---------|
-| users | 用户表 | id, username, password, name, role, status |
+| users | 用户表 | id, username, password, name, role, status, permissions |
 | students | 学生表 | id, name, phone, parent_name, parent_phone, status, total_hours, remaining_hours, planner_id |
 | courses | 课程表 | id, name, description, price, education_level, class_name, total_hours, valid_months, status |
 | enrollments | 报名记录表 | id, student_id, course_id, total_hours, remaining_hours, amount, start_date, expiry_date, status |
@@ -80,7 +84,7 @@
 
 | 角色 | 说明 | 权限 |
 |------|------|------|
-| admin | 超级管理员 | 拥有所有权限，包括删除学生、删除课程、删除用户等 |
+| admin | 超级管理员 | 拥有所有权限，包括删除学生、删除课程、删除用户、自定义分配权限等 |
 | manager | 管理员 | 可以添加学生、课程、管理规划师账号，但无删除权限 |
 | planner | 规划师 | 只能管理自己的学生、签到、报名、续费，无删除权限 |
 
@@ -92,6 +96,12 @@
 - 管理员只能创建和管理规划师账号，不能创建管理员账号
 - 只有超级管理员可以删除数据
 - 学生结课时自动清除该学生的续费提醒
+
+**自定义权限分配**：
+- 超级管理员可以为任意账号分配自定义权限
+- 权限包括：删除权限、编辑权限、管理权限、查看权限、操作权限等
+- 如果账号有自定义权限，则使用自定义权限；否则使用角色默认权限
+- 权限配置文件位于 `src/lib/permissions.ts`
 
 ## API 接口清单
 

@@ -36,7 +36,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from('users')
-      .select('id, username, name, role, status, created_at, updated_at')
+      .select('id, username, name, role, status, permissions, created_at, updated_at')
       .eq('id', id)
       .single();
 
@@ -61,7 +61,7 @@ export async function PUT(
     const role = request.headers.get('x-user-role');
     const currentUserId = request.headers.get('x-user-id');
     const body = await request.json();
-    const { name, password, status, role: newRole } = body;
+    const { name, password, status, role: newRole, permissions } = body;
 
     // 获取目标用户信息
     const { data: targetUser } = await supabase
@@ -71,7 +71,7 @@ export async function PUT(
       .single();
 
     // 构建更新对象
-    const updateData: Record<string, string | undefined> = {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
 
@@ -82,7 +82,7 @@ export async function PUT(
     const targetIsPlanner = targetUser?.role === 'planner';
 
     // 修改名字：用户自己可以改，admin可以改任何人，manager只能改planner
-    if (name) {
+    if (name !== undefined) {
       if (isSelf || isAdmin || (isManager && targetIsPlanner)) {
         updateData.name = name;
       } else {
@@ -99,22 +99,19 @@ export async function PUT(
       }
     }
 
-    // 修改状态：admin可以改任何人，manager只能改planner
-    if (status) {
-      if (isAdmin || (isManager && targetIsPlanner)) {
-        updateData.status = status;
-      } else {
-        return NextResponse.json({ error: '权限不足' }, { status: 403 });
-      }
+    // 修改状态：只有admin可以修改
+    if (status !== undefined && isAdmin) {
+      updateData.status = status;
     }
 
     // 修改角色：只有admin可以修改
-    if (newRole) {
-      if (isAdmin) {
-        updateData.role = newRole;
-      } else {
-        return NextResponse.json({ error: '权限不足：只有超级管理员可以修改角色' }, { status: 403 });
-      }
+    if (newRole !== undefined && isAdmin) {
+      updateData.role = newRole;
+    }
+
+    // 修改权限：只有admin可以修改
+    if (permissions !== undefined && isAdmin) {
+      updateData.permissions = permissions;
     }
 
     // 如果没有任何更新，返回错误
@@ -126,7 +123,7 @@ export async function PUT(
       .from('users')
       .update(updateData)
       .eq('id', id)
-      .select('id, username, name, role, status, created_at, updated_at')
+      .select('id, username, name, role, status, permissions, created_at, updated_at')
       .single();
 
     if (error) {
@@ -148,9 +145,15 @@ export async function DELETE(
   try {
     const { id } = await params;
     const role = request.headers.get('x-user-role');
+    const currentUserId = request.headers.get('x-user-id');
     
     if (role !== 'admin') {
       return NextResponse.json({ error: '权限不足：只有超级管理员可以删除用户' }, { status: 403 });
+    }
+
+    // 不能删除自己
+    if (currentUserId === id) {
+      return NextResponse.json({ error: '不能删除自己的账号' }, { status: 400 });
     }
 
     // 检查是否是最后一个admin

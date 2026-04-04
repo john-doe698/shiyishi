@@ -12,6 +12,7 @@ import {
   LogOut,
   Key,
   UserCog,
+  Shield,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,7 @@ const baseNavigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { canManageUsers, userInfo } = usePermission();
+  const { canManageUsers, userInfo, role } = usePermission();
   
   // 修改密码弹窗
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -49,9 +50,17 @@ export function Sidebar() {
   const [passwordError, setPasswordError] = useState('');
 
   // 根据权限过滤导航
-  const navigation = canManageUsers
-    ? [...baseNavigation, { name: '用户管理', href: '/users', icon: UserCog }]
-    : baseNavigation;
+  let navigation = [...baseNavigation];
+  
+  // 管理员可看到用户管理
+  if (canManageUsers) {
+    navigation.push({ name: '用户管理', href: '/users', icon: UserCog });
+  }
+  
+  // 只有超级管理员可看到权限管理
+  if (role === 'admin') {
+    navigation.push({ name: '权限管理', href: '/permissions', icon: Shield });
+  }
 
   const handleChangePassword = async () => {
     setPasswordError('');

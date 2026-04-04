@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { PERMISSIONS, DEFAULT_PERMISSIONS, PermissionKey } from '@/lib/permissions';
 
 export type UserRole = 'admin' | 'manager' | 'planner';
 
@@ -29,6 +30,7 @@ interface UserInfo {
   username: string;
   name: string;
   role: UserRole;
+  permissions?: PermissionKey[];
 }
 
 interface PermissionContextType {
@@ -41,6 +43,7 @@ interface PermissionContextType {
   canDelete: boolean;
   canEditCourse: boolean;
   canManageUsers: boolean;
+  hasPermission: (permission: PermissionKey) => boolean;
   refreshUserInfo: () => Promise<void>;
 }
 
@@ -126,15 +129,25 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // 检查用户是否有某个权限
+  const hasPermission = (permission: PermissionKey): boolean => {
+    // 如果有自定义权限，使用自定义权限
+    if (userInfo?.permissions && Array.isArray(userInfo.permissions)) {
+      return userInfo.permissions.includes(permission);
+    }
+    // 否则使用角色默认权限
+    const defaultPerms = DEFAULT_PERMISSIONS[role] || [];
+    return defaultPerms.includes(permission);
+  };
+
   const roleInfo = USER_ROLES[role];
   
-  // 权限判断
-  // 只有 admin 有删除权限
-  const canDelete = role === 'admin';
-  // admin 和 manager 可以编辑课程
-  const canEditCourse = role === 'admin' || role === 'manager';
-  // admin 和 manager 可以管理用户（规划师）
-  const canManageUsers = role === 'admin' || role === 'manager';
+  // 权限判断（使用新的权限系统）
+  const canDelete = hasPermission(PERMISSIONS.DELETE_STUDENT) || 
+                    hasPermission(PERMISSIONS.DELETE_COURSE) || 
+                    hasPermission(PERMISSIONS.DELETE_USER);
+  const canEditCourse = hasPermission(PERMISSIONS.EDIT_COURSE);
+  const canManageUsers = hasPermission(PERMISSIONS.MANAGE_USERS);
 
   return (
     <PermissionContext.Provider value={{
@@ -147,6 +160,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
       canDelete,
       canEditCourse,
       canManageUsers,
+      hasPermission,
       refreshUserInfo,
     }}>
       {children}

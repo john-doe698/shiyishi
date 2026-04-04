@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('users')
-      .select('id, username, name, role, status, created_at, updated_at')
+      .select('id, username, name, role, status, permissions, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     // 如果有 role 参数，进行过滤
