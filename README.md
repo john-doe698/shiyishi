@@ -354,6 +354,100 @@ export const useStore = create<Store>((set) => ({
 - [Tailwind CSS 文档](https://tailwindcss.com/docs)
 - [React Hook Form](https://react-hook-form.com)
 
+## 部署说明
+
+### 部署到 GitHub
+
+1. **初始化 Git 仓库**（如果尚未初始化）：
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+2. **关联 GitHub 远程仓库**：
+```bash
+git remote add origin https://github.com/your-username/your-repo.git
+git branch -M main
+git push -u origin main
+```
+
+### 部署到 Vercel
+
+#### 方式一：通过 Vercel Dashboard（推荐）
+
+1. 访问 [Vercel](https://vercel.com) 并登录
+2. 点击 "New Project"
+3. 导入你的 GitHub 仓库
+4. Vercel 会自动检测 Next.js 项目
+5. 配置环境变量（见下方）
+6. 点击 "Deploy"
+
+#### 方式二：通过 Vercel CLI
+
+```bash
+# 安装 Vercel CLI
+npm i -g vercel
+
+# 登录 Vercel
+vercel login
+
+# 部署项目
+vercel
+```
+
+### 环境变量配置
+
+在 Vercel 项目设置中添加以下环境变量：
+
+```bash
+# Supabase 数据库配置
+COZE_SUPABASE_URL=your-supabase-url
+COZE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+**获取方式**：
+1. 登录 [Supabase Dashboard](https://supabase.com/dashboard)
+2. 选择你的项目
+3. 进入 Settings > API
+4. 复制 `URL` 和 `anon public` key
+
+### 构建配置
+
+项目已预配置 Vercel 部署设置（见 `vercel.json`）：
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs"
+}
+```
+
+**构建命令**：`pnpm build`
+**输出目录**：`.next`
+**安装命令**：`pnpm install`
+
+### 部署后检查
+
+部署成功后，请验证以下功能：
+
+1. ✅ 用户登录功能
+2. ✅ 数据库连接正常
+3. ✅ 学生管理功能
+4. ✅ 权限管理功能（仅超级管理员可见）
+5. ✅ API 接口正常响应
+
+### 常见问题
+
+**Q: 部署失败提示找不到 typescript 模块**
+A: 确保 `typescript` 在 `dependencies` 中，而非 `devDependencies`
+
+**Q: 数据库连接失败**
+A: 检查环境变量是否正确配置，确保 Supabase 项目处于活跃状态
+
+**Q: 权限管理页面看不到**
+A: 只有超级管理员账号可以看到权限管理菜单，请确认登录账号的角色是 `admin`
+
 ## 重要提示
 
 1. **必须使用 pnpm** 作为包管理器
