@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const client = getSupabaseClient();
-
 // GET - 获取续费提醒
 export async function GET(request: NextRequest) {
+  const client = getSupabaseClient();
   const { searchParams } = new URL(request.url);
   const days = parseInt(searchParams.get('days') || '7'); // 默认查询7天内到期的
   

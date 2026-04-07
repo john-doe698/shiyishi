@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const client = getSupabaseClient();
-
 // GET - 获取统计数据
 export async function GET(request: NextRequest) {
+  const client = getSupabaseClient();
   try {
     const { searchParams } = new URL(request.url);
     const byPlanner = searchParams.get('by_planner') === 'true';
@@ -134,6 +133,7 @@ export async function GET(request: NextRequest) {
 
 // 获取按规划师分组的统计数据（仅管理员）
 async function getPlannerStats() {
+  const client = getSupabaseClient();
   const today = new Date().toISOString().split('T')[0];
   const monthStart = new Date();
   monthStart.setDate(1);

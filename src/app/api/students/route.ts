@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const client = getSupabaseClient();
-
 // GET - 获取学生列表
 export async function GET(request: NextRequest) {
+  const client = getSupabaseClient();
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
   const search = searchParams.get('search');
@@ -42,6 +41,7 @@ export async function GET(request: NextRequest) {
 
 // POST - 创建学生（报名）
 export async function POST(request: NextRequest) {
+  const client = getSupabaseClient();
   try {
     const body = await request.json();
     const { name, phone, parent_name, parent_phone, total_hours, remark } = body;
