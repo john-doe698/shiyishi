@@ -9,3 +9,6 @@ node_modules/.cache
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# 依赖目录
+node_modules
