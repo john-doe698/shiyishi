@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const client = getSupabaseClient();
-
 // GET - 获取单个报名记录详情
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const client = await getSupabaseClient();
   const { id } = await params;
   
   const { data, error } = await client
@@ -46,6 +45,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const client = await getSupabaseClient();
   try {
     const { id } = await params;
     const body = await request.json();
@@ -127,6 +127,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const client = await getSupabaseClient();
   const { id } = await params;
   
   // 获取报名记录信息

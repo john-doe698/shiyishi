@@ -3,7 +3,7 @@ import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 // GET - 获取签到记录
 export async function GET(request: NextRequest) {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { searchParams } = new URL(request.url);
   const student_id = searchParams.get('student_id');
   const course_id = searchParams.get('course_id');
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
 // POST - 学生签到
 export async function POST(request: NextRequest) {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   try {
     const body = await request.json();
     const { student_id, course_id, hours, status, remark } = body;

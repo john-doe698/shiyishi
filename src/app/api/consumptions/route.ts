@@ -3,7 +3,7 @@ import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 // GET - 获取消课记录
 export async function GET(request: NextRequest) {
-  const client = getSupabaseClient();
+  const client = await getSupabaseClient();
   const { searchParams } = new URL(request.url);
   const student_id = searchParams.get('student_id');
   const course_id = searchParams.get('course_id');

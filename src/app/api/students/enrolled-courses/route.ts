@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const client = getSupabaseClient();
-
 // GET - 获取学生已报名的课程列表
 export async function GET(request: NextRequest) {
+  const client = await getSupabaseClient();
   const { searchParams } = new URL(request.url);
   const student_id = searchParams.get('student_id');
   

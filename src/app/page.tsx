@@ -346,27 +346,27 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <a
+            <Link
               href="/students?action=add"
               className="block p-3 rounded-lg border hover:bg-muted transition-colors"
             >
               <div className="font-medium">学生报名</div>
               <div className="text-sm text-muted-foreground">录入新学生信息并选择课程</div>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/check-in"
               className="block p-3 rounded-lg border hover:bg-muted transition-colors"
             >
               <div className="font-medium">学生签到</div>
               <div className="text-sm text-muted-foreground">记录学生上课签到</div>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/courses"
               className="block p-3 rounded-lg border hover:bg-muted transition-colors"
             >
               <div className="font-medium">课程管理</div>
               <div className="text-sm text-muted-foreground">管理课程信息和价格</div>
-            </a>
+            </Link>
           </CardContent>
         </Card>
 

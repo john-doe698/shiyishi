@@ -8,14 +8,16 @@ interface SupabaseCredentials {
   anonKey: string;
 }
 
-function loadEnv(): void {
+async function loadEnv(): Promise<void> {
   if (envLoaded || (process.env.COZE_SUPABASE_URL && process.env.COZE_SUPABASE_ANON_KEY)) {
     return;
   }
 
   try {
     try {
-      require('dotenv').config();
+      // 使用动态导入替代 require
+      const dotenv = await import('dotenv');
+      dotenv.config();
       if (process.env.COZE_SUPABASE_URL && process.env.COZE_SUPABASE_ANON_KEY) {
         envLoaded = true;
         return;
@@ -67,8 +69,8 @@ except Exception as e:
   }
 }
 
-function getSupabaseCredentials(): SupabaseCredentials {
-  loadEnv();
+async function getSupabaseCredentials(): Promise<SupabaseCredentials> {
+  await loadEnv();
 
   const url = process.env.COZE_SUPABASE_URL;
   const anonKey = process.env.COZE_SUPABASE_ANON_KEY;
@@ -83,8 +85,8 @@ function getSupabaseCredentials(): SupabaseCredentials {
   return { url, anonKey };
 }
 
-function getSupabaseClient(token?: string): SupabaseClient {
-  const { url, anonKey } = getSupabaseCredentials();
+async function getSupabaseClient(token?: string): Promise<SupabaseClient> {
+  const { url, anonKey } = await getSupabaseCredentials();
 
   if (token) {
     return createClient(url, anonKey, {

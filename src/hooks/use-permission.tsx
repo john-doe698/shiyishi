@@ -62,6 +62,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
     if (savedLogin === 'true' && savedUserInfo) {
       try {
         const info = JSON.parse(savedUserInfo);
+        // 直接在 effect 中设置状态，因为这是初始化操作
         setIsLoggedIn(true);
         setUserInfo(info);
         setRoleState(info.role);

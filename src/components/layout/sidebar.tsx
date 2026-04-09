@@ -50,7 +50,7 @@ export function Sidebar() {
   const [passwordError, setPasswordError] = useState('');
 
   // 根据权限过滤导航
-  let navigation = [...baseNavigation];
+  const navigation = [...baseNavigation];
   
   // 管理员可看到用户管理
   if (canManageUsers) {

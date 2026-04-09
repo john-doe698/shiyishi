@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const client = getSupabaseClient();
-
 // PUT - 修改签到记录
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const client = await getSupabaseClient();
   try {
     const { id } = await params;
     const body = await request.json();
@@ -240,6 +239,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const client = await getSupabaseClient();
   try {
     const { id } = await params;
     

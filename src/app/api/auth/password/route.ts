@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const supabase = getSupabaseClient();
+const supabase = await getSupabaseClient();
 
 // 简单的密码加密函数
 function simpleHash(password: string): string {
