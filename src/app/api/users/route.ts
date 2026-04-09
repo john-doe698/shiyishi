@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const supabase = await getSupabaseClient();
-
 // 简单的密码加密函数（生产环境应使用 bcrypt）
 function simpleHash(password: string): string {
   let hash = 0;
@@ -21,6 +19,7 @@ function canManageUsers(role: string | null): boolean {
 
 // 获取用户列表（admin和manager可访问）
 export async function GET(request: NextRequest) {
+  const supabase = await getSupabaseClient();
   try {
     const role = request.headers.get('x-user-role');
     
@@ -57,6 +56,7 @@ export async function GET(request: NextRequest) {
 
 // 创建用户（admin和manager可创建）
 export async function POST(request: NextRequest) {
+  const supabase = await getSupabaseClient();
   try {
     const role = request.headers.get('x-user-role');
     

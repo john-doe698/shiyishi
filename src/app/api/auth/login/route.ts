@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const supabase = await getSupabaseClient();
-
 // 简单的密码加密函数
 function simpleHash(password: string): string {
   let hash = 0;
@@ -15,7 +13,7 @@ function simpleHash(password: string): string {
 }
 
 // 初始化默认账号
-async function initDefaultUsers() {
+async function initDefaultUsers(supabase: Awaited<ReturnType<typeof getSupabaseClient>>) {
   // 检查是否已初始化
   const { data: existingUsers } = await supabase
     .from('users')
@@ -53,9 +51,10 @@ async function initDefaultUsers() {
 
 // 登录验证
 export async function POST(request: NextRequest) {
+  const supabase = await getSupabaseClient();
   try {
     // 确保默认账号存在
-    await initDefaultUsers();
+    await initDefaultUsers(supabase);
 
     const body = await request.json();
     const { username, password } = body;

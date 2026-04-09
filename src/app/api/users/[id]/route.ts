@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const supabase = await getSupabaseClient();
-
 // 简单的密码加密函数
 function simpleHash(password: string): string {
   let hash = 0;
@@ -24,6 +22,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await getSupabaseClient();
   try {
     const { id } = await params;
     const role = request.headers.get('x-user-role');
@@ -56,6 +55,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await getSupabaseClient();
   try {
     const { id } = await params;
     const role = request.headers.get('x-user-role');
@@ -142,6 +142,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await getSupabaseClient();
   try {
     const { id } = await params;
     const role = request.headers.get('x-user-role');

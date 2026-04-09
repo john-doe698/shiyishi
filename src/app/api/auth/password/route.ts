@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-const supabase = await getSupabaseClient();
-
 // 简单的密码加密函数
 function simpleHash(password: string): string {
   let hash = 0;
@@ -16,6 +14,7 @@ function simpleHash(password: string): string {
 
 // 修改密码
 export async function PUT(request: NextRequest) {
+  const supabase = await getSupabaseClient();
   try {
     const body = await request.json();
     const { user_id, old_password, new_password } = body;
